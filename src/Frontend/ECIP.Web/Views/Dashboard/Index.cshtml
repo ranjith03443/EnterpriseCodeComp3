@@ -1,0 +1,201 @@
+@model ECIP.Web.ViewModels.DashboardViewModel
+
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="row g-4 mb-4">
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="text-muted mb-1">System Health</p>
+                        <h3 class="fw-bold mb-0">@Model.HealthStatus</h3>
+                    </div>
+                    <div class="icon-circle @(Model.HealthStatus == "Healthy" ? "bg-success-subtle text-success" : "bg-danger-subtle text-danger")">
+                        <i class="bi @(Model.HealthStatus == "Healthy" ? "bi-check-circle" : "bi-exclamation-circle")"></i>
+                    </div>
+                </div>
+                @if (Model.HealthResponse != null)
+                {
+                    <small class="text-muted d-block mt-2">Last checked: @Model.HealthResponse.Timestamp:G</small>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="text-muted mb-1">Version</p>
+                        <h3 class="fw-bold mb-0">@(string.IsNullOrEmpty(Model.Version) ? "N/A" : $"v{Model.Version}")</h3>
+                    </div>
+                    <div class="icon-circle bg-info-subtle text-info">
+                        <i class="bi bi-info-circle"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="text-muted mb-1">Framework</p>
+                        <h3 class="fw-bold mb-0">@(string.IsNullOrEmpty(Model.Framework) ? "N/A" : Model.Framework)</h3>
+                    </div>
+                    <div class="icon-circle bg-primary-subtle text-primary">
+                        <i class="bi bi-tools"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="text-muted mb-1">Repositories</p>
+                        <h3 class="fw-bold mb-0">@Model.TotalRepositories</h3>
+                    </div>
+                    <div class="icon-circle bg-warning-subtle text-warning">
+                        <i class="bi bi-box-seam"></i>
+                    </div>
+                </div>
+                <small class="text-muted d-block mt-2">Active: @Model.ActiveRepositoryName</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body">
+                <p class="text-muted mb-1">Total Files</p>
+                <h3 class="fw-bold mb-0">@Model.TotalFiles</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body">
+                <p class="text-muted mb-1">Projects</p>
+                <h3 class="fw-bold mb-0">@Model.TotalProjects</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body">
+                <p class="text-muted mb-1">Languages</p>
+                <h3 class="fw-bold mb-0">@Model.TotalLanguages</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body">
+                <p class="text-muted mb-1">Repository Size</p>
+                <h3 class="fw-bold mb-0">@Model.TotalRepositorySize</h3>
+                <small class="text-muted d-block mt-2">Last Scan: @Model.LastScanDate</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-12 col-xl-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="card-title mb-0">Quick Actions</h5>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <a class="btn btn-outline-primary" asp-controller="Repository" asp-action="Index">Register Repository</a>
+                    <a class="btn btn-outline-primary" asp-controller="Repository" asp-action="Index">Analyze Repository</a>
+                    <a class="btn btn-outline-primary" asp-controller="Architecture" asp-action="Index">Explore Architecture</a>
+                    <a class="btn btn-outline-primary" asp-controller="CodeGenerator" asp-action="Index">Ask AI</a>
+                    <a class="btn btn-outline-primary" asp-controller="CodeGenerator" asp-action="Index">Generate Code</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-xl-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="card-title mb-0">System Status</h5>
+                </div>
+                <ul class="list-group list-group-flush">
+                    @if (Model.SystemStatus != null)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            Web API 
+                            <span class="badge @(Model.SystemStatus.WebApi == "Healthy" ? "bg-success" : "bg-secondary")">@Model.SystemStatus.WebApi</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            Repository Service 
+                            <span class="badge @(Model.SystemStatus.RepositoryService == "Healthy" ? "bg-success" : "bg-secondary")">@Model.SystemStatus.RepositoryService</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            AI Service 
+                            <span class="badge @(Model.SystemStatus.AIService == "Healthy" ? "bg-success" : "bg-secondary")">@Model.SystemStatus.AIService</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            Prompt Registry 
+                            <span class="badge @(Model.SystemStatus.PromptRegistry == "Healthy" ? "bg-success" : "bg-secondary")">@Model.SystemStatus.PromptRegistry</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            AI Gateway 
+                            <span class="badge @(Model.SystemStatus.Gateway == "Healthy" ? "bg-success" : "bg-secondary")">@Model.SystemStatus.Gateway</span>
+                        </li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                            MCP Server 
+                            <span class="badge @(Model.SystemStatus.MCP == "Healthy" ? "bg-success" : "bg-secondary")">@Model.SystemStatus.MCP</span>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">Web API <span class="badge bg-secondary">Offline</span></li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">Repository Service <span class="badge bg-secondary">Offline</span></li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">AI Service <span class="badge bg-secondary">Offline</span></li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">Prompt Registry <span class="badge bg-secondary">Offline</span></li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">AI Gateway <span class="badge bg-secondary">Offline</span></li>
+                        <li class="list-group-item d-flex justify-content-between align-items-center px-0">MCP Server <span class="badge bg-secondary">Offline</span></li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-12 col-xl-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Recent Activity</h5>
+                <p class="text-muted mb-0">No activity available.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-xl-6">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Platform Metrics</h5>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">Interfaces <span class="fw-semibold">0</span></li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">Methods <span class="fw-semibold">0</span></li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">Business Flows <span class="fw-semibold">0</span></li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">Architecture Components <span class="fw-semibold">0</span></li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">Knowledge Graph Nodes <span class="fw-semibold">0</span></li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">AI Requests <span class="fw-semibold">0</span></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

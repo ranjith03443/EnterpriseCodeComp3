@@ -1,0 +1,125 @@
+@model ECIP.Web.ViewModels.RepositoryWorkspaceViewModel
+@{
+    ViewData["Title"] = "Repository Workspace";
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="Dashboard" asp-action="Index">Dashboard</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Repository Workspace</li>
+    </ol>
+</nav>
+
+@if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @Model.SuccessMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @Model.ErrorMessage
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="row g-4 mb-4">
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body">
+                <p class="text-muted mb-1">Total Repositories</p>
+                <h3 class="fw-bold mb-0">@Model.TotalRepositories</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body">
+                <p class="text-muted mb-1">Active Repository</p>
+                <h3 class="fw-bold mb-0">@Model.ActiveRepositoryName</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body">
+                <p class="text-muted mb-1">GitHub</p>
+                <h3 class="fw-bold mb-0">@Model.GitHubCount</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-xl-3">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body">
+                <p class="text-muted mb-1">Local</p>
+                <h3 class="fw-bold mb-0">@Model.LocalCount</h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-12 col-xl-4">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="card-title mb-0">Repository Actions</h5>
+                </div>
+                <div class="d-grid gap-2">
+                    <a class="btn btn-primary" asp-action="Create">Add Repository</a>
+                    <a class="btn btn-outline-secondary" asp-action="Clone">Clone Repository</a>
+                    <a class="btn btn-outline-secondary" asp-action="OpenLocal">Open Local Repository</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-xl-8">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Type</th>
+                                <th>Branch</th>
+                                <th>Local Path</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var repository in Model.Repositories)
+                            {
+                                <tr>
+                                    <td>
+                                        <a asp-action="Details" asp-route-id="@repository.Id" class="fw-semibold text-decoration-none">@repository.Name</a>
+                                    </td>
+                                    <td>@repository.Description</td>
+                                    <td>@repository.RepositoryType</td>
+                                    <td>@repository.Branch</td>
+                                    <td class="text-muted small">@repository.LocalPath</td>
+                                    <td><span class="badge bg-success-subtle text-success">@repository.Status</span></td>
+                                    <td>@repository.CreatedDate.ToShortDateString()</td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a class="btn btn-outline-primary" asp-action="Details" asp-route-id="@repository.Id"><i class="bi bi-eye"></i></a>
+                                            <a class="btn btn-outline-secondary" asp-action="Edit" asp-route-id="@repository.Id"><i class="bi bi-pencil"></i></a>
+                                            <a class="btn btn-outline-danger" asp-action="Delete" asp-route-id="@repository.Id" onclick="return confirm('Delete this repository?');"><i class="bi bi-trash"></i></a>
+                                            <a class="btn btn-outline-success" asp-action="Activate" asp-route-id="@repository.Id"><i class="bi bi-check2-circle"></i></a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

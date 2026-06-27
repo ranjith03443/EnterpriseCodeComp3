@@ -1,0 +1,35 @@
+@model ECIP.Web.ViewModels.RepositoryWorkspaceViewModel
+@{
+    ViewData["Title"] = "Open Local Repository";
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="Dashboard" asp-action="Index">Dashboard</a></li>
+        <li class="breadcrumb-item"><a asp-action="Index">Repository Workspace</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Open Local Repository</li>
+    </ol>
+</nav>
+
+<div class="card border-0 shadow-sm rounded-4">
+    <div class="card-body">
+        <form asp-action="OpenLocal" method="post">
+            <div class="mb-3">
+                <label class="form-label" for="Name">Repository Name</label>
+                <input class="form-control" id="Name" name="Name" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="LocalPath">Local Folder Path</label>
+                <input class="form-control" id="LocalPath" name="LocalPath" required />
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="Description">Description</label>
+                <textarea class="form-control" id="Description" name="Description" rows="3"></textarea>
+            </div>
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Register</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>

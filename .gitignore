@@ -1,0 +1,214 @@
+###########################################################
+# Enterprise Code Intelligence Platform
+# .NET 8 + Python + VS Code
+###########################################################
+
+############################
+# Build folders
+############################
+
+bin/
+obj/
+out/
+publish/
+
+############################
+# Visual Studio
+############################
+
+.vs/
+
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+############################
+# VS Code
+############################
+
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+############################
+# Rider
+############################
+
+.idea/
+
+############################
+# NuGet
+############################
+
+*.nupkg
+packages/
+.nuget/
+
+############################
+# Logs
+############################
+
+logs/
+*.log
+
+############################
+# Python
+############################
+
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+############################
+# Python Virtual Environment
+############################
+
+.venv/
+venv/
+env/
+
+############################
+# Jupyter
+############################
+
+.ipynb_checkpoints/
+
+############################
+# SQLite
+############################
+
+*.db
+*.db-shm
+*.db-wal
+
+############################
+# AI Generated Data
+############################
+
+embeddings/
+vectorstore/
+faiss_index/
+knowledgegraph/
+generated/
+temp/
+
+############################
+# Repository Cache
+############################
+
+repositories/
+workspace/
+cache/
+
+############################
+# Application Data
+############################
+
+data/
+uploads/
+downloads/
+
+############################
+# Secrets
+############################
+
+.env
+.env.*
+*.secret
+*.key
+*.pem
+*.pfx
+
+appsettings.Development.json
+
+############################
+# OS Files
+############################
+
+Thumbs.db
+Desktop.ini
+
+.DS_Store
+
+############################
+# Test Results
+############################
+
+TestResults/
+coverage/
+coverage-report/
+
+############################
+# Benchmark
+############################
+
+BenchmarkDotNet.Artifacts/
+
+############################
+# Docker
+############################
+
+docker-compose.override.yml
+
+############################
+# Node (Future)
+############################
+
+node_modules/
+
+############################
+# Terraform (Future)
+############################
+
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
+
+############################
+# Azure (Future)
+############################
+
+.azure/
+
+############################
+# Local AI Models (Future)
+############################
+
+models/
+
+############################
+# MCP Server Cache
+############################
+
+mcp-cache/
+
+############################
+# Temporary
+############################
+
+tmp/
+temp/
+
+############################
+# Publish Output
+############################
+
+publish/
+
+############################
+# Generated Documentation
+############################
+
+docs/generated/
+
+############################
+# Misc
+############################
+
+*.bak
+*.tmp
+*.cache

@@ -1,0 +1,59 @@
+@model ECIP.Web.Models.RepositoryFormViewModel
+@{
+    ViewData["Title"] = "Add Repository";
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="Dashboard" asp-action="Index">Dashboard</a></li>
+        <li class="breadcrumb-item"><a asp-action="Index">Repository Workspace</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Add Repository</li>
+    </ol>
+</nav>
+
+<div class="card border-0 shadow-sm rounded-4">
+    <div class="card-body">
+        <form asp-action="Create" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label asp-for="Name" class="form-label"></label>
+                    <input asp-for="Name" class="form-control" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="RepositoryType" class="form-label"></label>
+                    <select asp-for="RepositoryType" class="form-select" asp-items="Html.GetEnumSelectList<ECIP.Core.Enums.RepositoryType>()"></select>
+                </div>
+                <div class="col-12">
+                    <label asp-for="Description" class="form-label"></label>
+                    <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="RepositoryUrl" class="form-label"></label>
+                    <input asp-for="RepositoryUrl" class="form-control" />
+                    <span asp-validation-for="RepositoryUrl" class="text-danger"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Branch" class="form-label"></label>
+                    <input asp-for="Branch" class="form-control" />
+                </div>
+                <div class="col-12">
+                    <label asp-for="LocalPath" class="form-label"></label>
+                    <input asp-for="LocalPath" class="form-control" />
+                    <span asp-validation-for="LocalPath" class="text-danger"></span>
+                </div>
+                <div class="col-12">
+                    <div class="form-check">
+                        <input asp-for="IsActive" class="form-check-input" />
+                        <label asp-for="IsActive" class="form-check-label"></label>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Save Repository</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>

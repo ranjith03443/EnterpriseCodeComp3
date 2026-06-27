@@ -1,0 +1,51 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+body {
+  min-height: 100vh;
+  background-color: #f4f7fb;
+  color: #1f2a44;
+}
+
+.topbar {
+  background: linear-gradient(135deg, #0f2b4f, #1d4b8f);
+}
+
+.sidebar {
+  background: #102a47;
+}
+
+.sidebar .nav-link {
+  border-radius: 0.75rem;
+  padding: 0.7rem 0.9rem;
+}
+
+.sidebar .nav-link.active {
+  background-color: rgba(255,255,255,0.16);
+  color: #fff !important;
+}
+
+.icon-circle {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 1.1rem;
+}
+
+.card {
+  border-radius: 1.25rem;
+}
+
+.btn-outline-primary {
+  border-radius: 999px;
+}

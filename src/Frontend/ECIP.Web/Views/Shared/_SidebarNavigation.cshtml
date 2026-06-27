@@ -1,0 +1,27 @@
+@{
+    var items = new[]
+    {
+        new { Controller = "Dashboard", Action = "Index", Label = "Dashboard", Icon = "bi-speedometer2" },
+        new { Controller = "Repository", Action = "Index", Label = "Repository Manager", Icon = "bi-box-seam" },
+        new { Controller = "RepositoryIntelligence", Action = "Index", Label = "Repository Intelligence", Icon = "bi-graph-up-arrow" },
+        new { Controller = "Architecture", Action = "Index", Label = "Architecture Explorer", Icon = "bi-diagram-3" },
+        new { Controller = "FlowExplorer", Action = "Index", Label = "Flow Explorer", Icon = "bi-bezier2" },
+        new { Controller = "KnowledgeGraph", Action = "Index", Label = "Knowledge Graph", Icon = "bi-graph-up" },
+        new { Controller = "Onboarding", Action = "Index", Label = "Onboarding Assistant", Icon = "bi-person-badge" },
+        new { Controller = "ImpactAnalysis", Action = "Index", Label = "Change Impact Analysis", Icon = "bi-shuffle" },
+        new { Controller = "CodeGenerator", Action = "Index", Label = "AI Code Generator", Icon = "bi-cpu" },
+        new { Controller = "PromptRegistry", Action = "Index", Label = "Prompt Registry", Icon = "bi-journals" },
+        new { Controller = "Settings", Action = "Index", Label = "Settings", Icon = "bi-gear" },
+        new { Controller = "About", Action = "Index", Label = "About", Icon = "bi-info-circle" }
+    };
+}
+
+<nav class="nav nav-pills flex-column gap-1">
+    @foreach (var item in items)
+    {
+        var isActive = ViewContext.RouteData.Values["controller"]?.ToString()?.Equals(item.Controller, StringComparison.OrdinalIgnoreCase) == true;
+        <a class="nav-link @(isActive ? "active" : "text-white-50")" asp-controller="@item.Controller" asp-action="@item.Action">
+            <i class="bi @item.Icon me-2"></i>@item.Label
+        </a>
+    }
+</nav>

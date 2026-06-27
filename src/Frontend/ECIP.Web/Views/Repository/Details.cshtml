@@ -1,0 +1,344 @@
+@model ECIP.Web.ViewModels.RepositoryDetailsViewModel
+@{
+    ViewData["Title"] = "Repository Details";
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="Dashboard" asp-action="Index">Dashboard</a></li>
+        <li class="breadcrumb-item"><a asp-action="Index">Repository Workspace</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@Model.Repository.Name</li>
+    </ol>
+</nav>
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+                <h4 class="fw-semibold mb-1">@Model.Repository.Name</h4>
+                <p class="text-muted mb-0">@Model.Repository.Description</p>
+            </div>
+            <div class="d-flex gap-2">
+                <form asp-action="Scan" asp-route-id="@Model.Repository.Id" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="bi bi-arrow-clockwise"></i> Scan Repository
+                    </button>
+                </form>
+                <span class="badge bg-success-subtle text-success align-self-center">@Model.Repository.Status</span>
+            </div>
+        </div>
+        <div class="row g-2 small text-muted">
+            <div class="col-md-4"><strong>Type:</strong> @Model.Repository.RepositoryType</div>
+            <div class="col-md-4"><strong>Branch:</strong> @Model.Repository.Branch</div>
+            <div class="col-md-4"><strong>Last Scan:</strong> @(Model.Repository.LastScanDate?.ToString("g") ?? "Not scanned")</div>
+            <div class="col-md-12"><strong>Path:</strong> @Model.Repository.LocalPath</div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabbed Navigation -->
+<ul class="nav nav-tabs mb-4" id="repoTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link @(Model.ActiveTab == "summary" ? "active" : "")" id="summary-tab" data-bs-toggle="tab" data-bs-target="#summary" type="button" role="tab">
+            <i class="bi bi-info-circle"></i> Summary
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link @(Model.ActiveTab == "projects" ? "active" : "")" id="projects-tab" data-bs-toggle="tab" data-bs-target="#projects" type="button" role="tab">
+            <i class="bi bi-folder2-open"></i> Projects
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link @(Model.ActiveTab == "languages" ? "active" : "")" id="languages-tab" data-bs-toggle="tab" data-bs-target="#languages" type="button" role="tab">
+            <i class="bi bi-code-slash"></i> Languages
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link @(Model.ActiveTab == "folders" ? "active" : "")" id="folders-tab" data-bs-toggle="tab" data-bs-target="#folders" type="button" role="tab">
+            <i class="bi bi-diagram-3"></i> Folders
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link @(Model.ActiveTab == "statistics" ? "active" : "")" id="statistics-tab" data-bs-toggle="tab" data-bs-target="#statistics" type="button" role="tab">
+            <i class="bi bi-bar-chart"></i> Statistics
+        </button>
+    </li>
+</ul>
+
+<!-- Tab Content -->
+<div class="tab-content" id="repoTabsContent">
+    <!-- Summary Tab -->
+    <div class="tab-pane fade @(Model.ActiveTab == "summary" ? "show active" : "")" id="summary" role="tabpanel">
+        @if (Model.HasMetadata)
+        {
+            <div class="row g-4">
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm rounded-4 h-100">
+                        <div class="card-body text-center">
+                            <h2 class="fw-bold text-primary">@Model.Summary!.TotalFiles</h2>
+                            <p class="text-muted mb-0">Total Files</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm rounded-4 h-100">
+                        <div class="card-body text-center">
+                            <h2 class="fw-bold text-success">@Model.Summary.TotalFolders</h2>
+                            <p class="text-muted mb-0">Folders</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm rounded-4 h-100">
+                        <div class="card-body text-center">
+                            <h2 class="fw-bold text-info">@Model.Summary.ProjectCount</h2>
+                            <p class="text-muted mb-0">Projects</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 shadow-sm rounded-4 h-100">
+                        <div class="card-body text-center">
+                            <h2 class="fw-bold text-warning">@Model.Summary.LanguageCount</h2>
+                            <p class="text-muted mb-0">Languages</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card border-0 shadow-sm rounded-4 mt-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Repository Summary</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6"><strong>Repository Name:</strong> @Model.Summary.RepositoryName</div>
+                        <div class="col-md-6"><strong>Repository Type:</strong> @Model.Summary.RepositoryType</div>
+                        <div class="col-md-6"><strong>Source Files:</strong> @Model.Summary.SourceFiles</div>
+                        <div class="col-md-6"><strong>Configuration Files:</strong> @Model.Summary.ConfigurationFiles</div>
+                        <div class="col-md-6"><strong>Documentation Files:</strong> @Model.Summary.DocumentationFiles</div>
+                        <div class="col-md-6"><strong>Total Size:</strong> @Model.Summary.TotalSizeFormatted</div>
+                        <div class="col-md-6"><strong>Largest File:</strong> @Model.Summary.LargestFileName (@Model.Summary.LargestFileSizeFormatted)</div>
+                        <div class="col-md-6"><strong>Last Scan:</strong> @(Model.Summary.LastScanDate?.ToString("g") ?? "Never")</div>
+                        <div class="col-md-12"><strong>Root Path:</strong> @Model.Summary.RepositoryRoot</div>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> No metadata available. Click <strong>Scan Repository</strong> to generate metadata.
+            </div>
+        }
+    </div>
+
+    <!-- Projects Tab -->
+    <div class="tab-pane fade @(Model.ActiveTab == "projects" ? "show active" : "")" id="projects" role="tabpanel">
+        @if (Model.Projects.Any())
+        {
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Discovered Projects (@Model.Projects.Count)</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>File</th>
+                                    <th>Path</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var project in Model.Projects)
+                                {
+                                    <tr>
+                                        <td class="fw-semibold">@project.Name</td>
+                                        <td><span class="badge bg-primary-subtle text-primary">@project.ProjectType</span></td>
+                                        <td>@project.FileName</td>
+                                        <td class="text-muted small">@project.RelativePath</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> No projects discovered. Scan the repository to detect projects.
+            </div>
+        }
+    </div>
+
+    <!-- Languages Tab -->
+    <div class="tab-pane fade @(Model.ActiveTab == "languages" ? "show active" : "")" id="languages" role="tabpanel">
+        @if (Model.Languages.Any())
+        {
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Language Distribution</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Language</th>
+                                    <th>Extension</th>
+                                    <th>Files</th>
+                                    <th>Size</th>
+                                    <th>Percentage</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var lang in Model.Languages)
+                                {
+                                    <tr>
+                                        <td class="fw-semibold">@lang.Language</td>
+                                        <td><code>@lang.Extension</code></td>
+                                        <td>@lang.FileCount</td>
+                                        <td>@lang.TotalSizeFormatted</td>
+                                        <td>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="progress flex-grow-1" style="height: 8px;">
+                                                    <div class="progress-bar" role="progressbar" style="width: @lang.Percentage%"></div>
+                                                </div>
+                                                <span class="small">@lang.Percentage%</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> No language data available. Scan the repository first.
+            </div>
+        }
+    </div>
+
+    <!-- Folders Tab -->
+    <div class="tab-pane fade @(Model.ActiveTab == "folders" ? "show active" : "")" id="folders" role="tabpanel">
+        @if (Model.FolderStatistics.Any())
+        {
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">Folder Statistics (@Model.FolderStatistics.Count folders)</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Folder</th>
+                                    <th>Path</th>
+                                    <th>Files</th>
+                                    <th>Size</th>
+                                    <th>Depth</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var folder in Model.FolderStatistics.Take(50))
+                                {
+                                    <tr>
+                                        <td class="fw-semibold">@folder.FolderName</td>
+                                        <td class="text-muted small">@folder.RelativePath</td>
+                                        <td>@folder.NumberOfFiles</td>
+                                        <td>@folder.TotalSizeFormatted</td>
+                                        <td>@folder.Depth</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    @if (Model.FolderStatistics.Count > 50)
+                    {
+                        <p class="text-muted mt-2">Showing top 50 of @Model.FolderStatistics.Count folders.</p>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> No folder statistics available. Scan the repository first.
+            </div>
+        }
+    </div>
+
+    <!-- Statistics Tab -->
+    <div class="tab-pane fade @(Model.ActiveTab == "statistics" ? "show active" : "")" id="statistics" role="tabpanel">
+        @if (Model.HasMetadata)
+        {
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm rounded-4 h-100">
+                        <div class="card-body">
+                            <h5 class="card-title mb-3">File Classification</h5>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between px-0">
+                                    Source Files <span class="fw-semibold">@Model.Summary!.SourceFiles</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between px-0">
+                                    Configuration Files <span class="fw-semibold">@Model.Summary.ConfigurationFiles</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between px-0">
+                                    Documentation Files <span class="fw-semibold">@Model.Summary.DocumentationFiles</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between px-0">
+                                    Total Files <span class="fw-semibold">@Model.Summary.TotalFiles</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm rounded-4 h-100">
+                        <div class="card-body">
+                            <h5 class="card-title mb-3">Size Information</h5>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between px-0">
+                                    Total Size <span class="fw-semibold">@Model.Summary.TotalSizeFormatted</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between px-0">
+                                    Largest File <span class="fw-semibold">@Model.Summary.LargestFileName</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between px-0">
+                                    Largest File Size <span class="fw-semibold">@Model.Summary.LargestFileSizeFormatted</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between px-0">
+                                    Folders <span class="fw-semibold">@Model.Summary.TotalFolders</span>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> No statistics available. Scan the repository first.
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,35 @@
+@model ECIP.Web.ViewModels.RepositoryWorkspaceViewModel
+@{
+    ViewData["Title"] = "Clone Repository";
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="Dashboard" asp-action="Index">Dashboard</a></li>
+        <li class="breadcrumb-item"><a asp-action="Index">Repository Workspace</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Clone Repository</li>
+    </ol>
+</nav>
+
+<div class="card border-0 shadow-sm rounded-4">
+    <div class="card-body">
+        <form asp-action="Clone" method="post">
+            <div class="mb-3">
+                <label class="form-label" for="RepositoryUrl">Repository URL</label>
+                <input class="form-control" id="RepositoryUrl" name="RepositoryUrl" required />
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="Branch">Branch</label>
+                <input class="form-control" id="Branch" name="Branch" value="main" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label" for="LocalPath">Local Folder Name</label>
+                <input class="form-control" id="LocalPath" name="LocalPath" required />
+            </div>
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Clone</button>
+                <a asp-action="Index" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>

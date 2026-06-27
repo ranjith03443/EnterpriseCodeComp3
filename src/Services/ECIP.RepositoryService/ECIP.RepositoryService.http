@@ -1,0 +1,6 @@
+@ECIP.RepositoryService_HostAddress = http://localhost:5159
+
+GET {{ECIP.RepositoryService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
