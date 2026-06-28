@@ -1,0 +1,195 @@
+@using ECIP.Shared.DTOs
+@{
+    ViewData["Title"] = "About ECIP";
+    var health      = ViewBag.Health as HealthResponse;
+    var version     = ViewBag.Version as VersionResponse;
+    var aiAvailable = (bool)(ViewBag.AiAvailable ?? false);
+    var repoCount   = (int)(ViewBag.RepoCount ?? 0);
+}
+
+<div class="text-center mb-5">
+    <i class="bi bi-cpu-fill display-1 text-primary mb-3"></i>
+    <h1 class="fw-bold">Enterprise Code Intelligence Platform</h1>
+    <p class="lead text-muted">AI-powered codebase understanding for enterprise development teams</p>
+    <div class="d-flex justify-content-center gap-3 mt-3">
+        <span class="badge bg-primary fs-6">v@(version?.Version ?? "1.0.0")</span>
+        <span class="badge bg-@(health?.Status == "Healthy" ? "success" : "danger") fs-6">
+            API: @(health?.Status ?? "Offline")
+        </span>
+        <span class="badge bg-@(aiAvailable ? "success" : "warning") fs-6">
+            AI: @(aiAvailable ? "Online" : "Offline")
+        </span>
+    </div>
+</div>
+
+@* Sprint Timeline *@
+<div class="card shadow-sm mb-5">
+    <div class="card-header fw-semibold fs-5"><i class="bi bi-calendar3 me-2 text-primary"></i>12-Sprint Capstone Timeline</div>
+    <div class="card-body">
+        <div class="row g-3">
+            @{
+                var sprints = new[]
+                {
+                    new { Num="0",    Label="Foundation",              Icon="bi-folder2",           Color="secondary", Desc="Solution structure, .NET 8 standardisation, bootstrap scripts" },
+                    new { Num="1",    Label="App Shell",               Icon="bi-layout-sidebar",    Color="secondary", Desc="MVC + Web API, Swagger, Serilog, health/version endpoints" },
+                    new { Num="2",    Label="Repository Management",   Icon="bi-box-seam",          Color="secondary", Desc="Register, clone, list, details, delete — EF Core + SQLite" },
+                    new { Num="3",    Label="Repository Intelligence", Icon="bi-graph-up-arrow",    Color="secondary", Desc="Scanner, file discovery, language detection, metadata extraction" },
+                    new { Num="4",    Label="AI Foundation",           Icon="bi-lightning-charge",  Color="primary",   Desc="FastAPI microservice, multi-vendor LLM, Prompt Registry, AI Gateway" },
+                    new { Num="5",    Label="Planner Agent",           Icon="bi-robot",             Color="primary",   Desc="Intent detection, plan building, agentic execution loop" },
+                    new { Num="6",    Label="Architecture Explorer",   Icon="bi-diagram-3",         Color="success",   Desc="Layer detection, tech stack visualisation, AI architectural review" },
+                    new { Num="7",    Label="Flow Explorer",           Icon="bi-bezier2",           Color="success",   Desc="Execution flow diagrams, AI flow explanation" },
+                    new { Num="8",    Label="Knowledge Graph",         Icon="bi-graph-up",          Color="success",   Desc="Entity graph — repositories, layers, projects, technologies" },
+                    new { Num="9",    Label="Onboarding Assistant",    Icon="bi-person-badge",      Color="info",      Desc="RAG-powered Q&A, keyword retrieval, source citations" },
+                    new { Num="10",   Label="Change Impact Analysis",  Icon="bi-shuffle",           Color="info",      Desc="Risk scoring, affected layer detection, AI impact narrative" },
+                    new { Num="11",   Label="AI Code Generator",       Icon="bi-cpu",               Color="warning",   Desc="Template-based code scaffolding with 8 patterns" },
+                    new { Num="12",   Label="Final Demo",              Icon="bi-trophy",            Color="warning",   Desc="Platform showcase, live health, all 12 sprints complete" },
+                };
+            }
+            @foreach (var s in sprints)
+            {
+                <div class="col-sm-6 col-lg-4">
+                    <div class="card border-@s.Color h-100">
+                        <div class="card-body py-2 px-3">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="badge bg-@s.Color rounded-pill">S@s.Num</span>
+                                <i class="bi @s.Icon text-@s.Color"></i>
+                                <span class="fw-semibold small">@s.Label</span>
+                            </div>
+                            <p class="text-muted mb-0" style="font-size:.75rem">@s.Desc</p>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-5">
+    @* Tech Stack *@
+    <div class="col-lg-6">
+        <div class="card shadow-sm h-100">
+            <div class="card-header fw-semibold"><i class="bi bi-stack me-2 text-primary"></i>Technology Stack</div>
+            <div class="list-group list-group-flush">
+                @foreach (var t in new[]
+                {
+                    new { Layer="Backend API",       Tech=".NET 8 · ASP.NET Core Web API · Swagger / OpenAPI",         Icon="bi-hdd-network", Color="success" },
+                    new { Layer="Frontend",          Tech=".NET 8 · ASP.NET Core MVC · Bootstrap 5 · Bootstrap Icons", Icon="bi-window",       Color="primary" },
+                    new { Layer="AI Service",        Tech="Python 3.12 · FastAPI · Uvicorn · Pydantic · PyYAML",       Icon="bi-robot",        Color="warning" },
+                    new { Layer="LLM Providers",     Tech="OpenAI · Google Gemini · Ollama · Mock (built-in)",          Icon="bi-brain",        Color="info"    },
+                    new { Layer="Data Layer",        Tech="Entity Framework Core · SQLite · Migrations",               Icon="bi-database",     Color="danger"  },
+                    new { Layer="Logging",           Tech="Serilog · Structured logging · Console / File sinks",        Icon="bi-journals",     Color="secondary"},
+                    new { Layer="Architecture",      Tech="Clean Architecture · SOLID · Dependency Injection",          Icon="bi-diagram-3",    Color="primary" },
+                    new { Layer="DevOps",            Tech="Git · GitHub · GitHub CLI · GitHub Actions (ready)",         Icon="bi-github",       Color="dark"    },
+                })
+                {
+                    <div class="list-group-item py-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi @t.Icon text-@t.Color fs-5" style="min-width:24px"></i>
+                            <div>
+                                <div class="fw-semibold small">@t.Layer</div>
+                                <div class="text-muted" style="font-size:.75rem">@t.Tech</div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* Feature Quick-Launch + Live Status *@
+    <div class="col-lg-6">
+        <div class="card shadow-sm mb-3">
+            <div class="card-header fw-semibold"><i class="bi bi-lightning-charge me-2 text-warning"></i>Quick Launch</div>
+            <div class="card-body">
+                <div class="row g-2">
+                    @foreach (var f in new[]
+                    {
+                        new { Ctrl="RepositoryIntelligence", Action="Index", Label="Repository Intelligence", Icon="bi-graph-up-arrow", Color="success" },
+                        new { Ctrl="Planner",                Action="Index", Label="Planner Agent",           Icon="bi-robot",          Color="primary" },
+                        new { Ctrl="Architecture",           Action="Index", Label="Architecture Explorer",   Icon="bi-diagram-3",      Color="warning" },
+                        new { Ctrl="FlowExplorer",           Action="Index", Label="Flow Explorer",           Icon="bi-bezier2",        Color="info"    },
+                        new { Ctrl="KnowledgeGraph",         Action="Index", Label="Knowledge Graph",         Icon="bi-graph-up",       Color="success" },
+                        new { Ctrl="Onboarding",             Action="Index", Label="Onboarding Assistant",    Icon="bi-person-badge",   Color="primary" },
+                        new { Ctrl="ImpactAnalysis",         Action="Index", Label="Change Impact Analysis",  Icon="bi-shuffle",        Color="danger"  },
+                        new { Ctrl="CodeGenerator",          Action="Index", Label="AI Code Generator",       Icon="bi-cpu",            Color="warning" },
+                    })
+                    {
+                        <div class="col-6">
+                            <a asp-controller="@f.Ctrl" asp-action="@f.Action"
+                               class="btn btn-outline-@f.Color btn-sm w-100 text-start">
+                                <i class="bi @f.Icon me-1"></i>@f.Label
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header fw-semibold"><i class="bi bi-activity me-2 text-success"></i>Live System Status</div>
+            <div class="list-group list-group-flush small">
+                <div class="list-group-item d-flex justify-content-between">
+                    <span><i class="bi bi-hdd-network me-2"></i>ECIP API</span>
+                    <span class="badge bg-@(health?.Status == "Healthy" ? "success" : "danger")">@(health?.Status ?? "Offline")</span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between">
+                    <span><i class="bi bi-robot me-2"></i>AI Service (FastAPI)</span>
+                    <span class="badge bg-@(aiAvailable ? "success" : "warning")">@(aiAvailable ? "Online" : "Offline")</span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between">
+                    <span><i class="bi bi-database me-2"></i>SQLite Database</span>
+                    <span class="badge bg-success">Online</span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between">
+                    <span><i class="bi bi-box-seam me-2"></i>Repositories</span>
+                    <span class="badge bg-primary">@repoCount registered</span>
+                </div>
+                <div class="list-group-item d-flex justify-content-between">
+                    <span><i class="bi bi-code-slash me-2"></i>Runtime</span>
+                    <span class="badge bg-secondary">@(version?.Framework ?? ".NET 8")</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Architecture Diagram *@
+<div class="card shadow-sm mb-4">
+    <div class="card-header fw-semibold"><i class="bi bi-diagram-3 me-2 text-primary"></i>Architecture Overview</div>
+    <div class="card-body">
+        <div class="d-flex flex-wrap justify-content-center align-items-center gap-2 py-2">
+            @foreach (var (label, color, icon, arrow) in new (string,string,string,bool)[]
+            {
+                ("Browser / User", "light",     "bi-person-circle",   true),
+                ("ECIP.Web (MVC)", "primary",   "bi-window",          true),
+                ("ECIP.API",       "success",   "bi-hdd-network",     true),
+                ("ECIP.AIService", "warning",   "bi-robot",           true),
+                ("AI Gateway",     "info",      "bi-lightning-charge",true),
+                ("LLM Provider",   "secondary", "bi-brain",           false),
+            })
+            {
+                <div class="text-center">
+                    <div class="card border-@color px-3 py-2">
+                        <i class="bi @icon text-@color fs-4"></i>
+                        <div class="small fw-semibold mt-1">@label</div>
+                    </div>
+                </div>
+                @if (arrow) { <i class="bi bi-arrow-right text-muted fs-4"></i> }
+            }
+        </div>
+        <div class="d-flex justify-content-center mt-3">
+            <div class="card border-danger px-4 py-2 text-center">
+                <i class="bi bi-database text-danger fs-4"></i>
+                <div class="small fw-semibold mt-1">SQLite (EF Core)</div>
+            </div>
+        </div>
+        <div class="text-center text-muted mt-1" style="font-size:.72rem">
+            <i class="bi bi-arrow-up me-1"></i>ECIP.API reads/writes via EcipDbContext
+        </div>
+    </div>
+</div>
+
+<div class="text-center text-muted small pb-4">
+    <i class="bi bi-trophy-fill text-warning me-1"></i>
+    ECIP — Enterprise Code Intelligence Platform &mdash; 12-Sprint AI Engineering Capstone &mdash; .NET 8 + FastAPI + Clean Architecture
+</div>
