@@ -1,0 +1,312 @@
+@model ECIP.Web.ViewModels.PlannerViewModel
+@{
+    ViewData["Title"] = "Planner Agent";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1"><i class="bi bi-robot me-2 text-primary"></i>Planner Agent</h1>
+        <p class="text-muted mb-0">Ask a question about your codebase — the Planner detects your intent, builds an execution plan, and runs it through the AI Gateway.</p>
+    </div>
+    <div>
+        @if (Model.AiServiceAvailable)
+        {
+            <span class="badge bg-success fs-6"><i class="bi bi-circle-fill me-1" style="font-size:0.5rem"></i>AI Service Online</span>
+        }
+        else
+        {
+            <span class="badge bg-danger fs-6"><i class="bi bi-circle-fill me-1" style="font-size:0.5rem"></i>AI Service Offline</span>
+        }
+    </div>
+</div>
+
+@if (!Model.AiServiceAvailable)
+{
+    <div class="alert alert-warning d-flex align-items-center mb-4">
+        <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+        <div>
+            The AI service is not reachable. Start it with:
+            <code class="ms-1">python -m uvicorn main:app --reload</code>
+            from <code>src/Services/ECIP.AIService/</code>
+        </div>
+    </div>
+}
+
+<div class="row g-4">
+    @* ── Input panel ── *@
+    <div class="col-lg-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-header bg-primary text-white">
+                <i class="bi bi-chat-left-text me-2"></i>Your Question
+            </div>
+            <div class="card-body d-flex flex-column">
+                <div class="mb-3">
+                    <label for="queryInput" class="form-label fw-semibold">Query</label>
+                    <textarea id="queryInput" class="form-control" rows="5"
+                              placeholder="e.g. Summarise this repository&#10;How is the architecture structured?&#10;Explain the RepositoryService class&#10;What is the impact of changing the gateway?"
+                              @(Model.AiServiceAvailable ? "" : "disabled")></textarea>
+                    <div class="form-text">Ask anything about your codebase.</div>
+                </div>
+                <div class="mb-3">
+                    <label for="contextInput" class="form-label fw-semibold">Context <span class="text-muted fw-normal">(optional)</span></label>
+                    <textarea id="contextInput" class="form-control" rows="4"
+                              placeholder="Paste relevant code, a class name, component description, or any extra context..."
+                              @(Model.AiServiceAvailable ? "" : "disabled")></textarea>
+                    <div class="form-text">Helps the planner produce more accurate results.</div>
+                </div>
+                <div class="mt-auto">
+                    <button id="askBtn" class="btn btn-primary w-100" @(Model.AiServiceAvailable ? "" : "disabled")>
+                        <i class="bi bi-send-fill me-2"></i>Ask Planner
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        @* ── Sample queries ── *@
+        <div class="card shadow-sm mt-3">
+            <div class="card-header">
+                <i class="bi bi-lightbulb me-2"></i>Sample Queries
+            </div>
+            <div class="list-group list-group-flush">
+                <button class="list-group-item list-group-item-action sample-query" data-query="Summarise this repository and its key components">
+                    <i class="bi bi-journal-code me-2 text-primary"></i>Summarise this repository
+                </button>
+                <button class="list-group-item list-group-item-action sample-query" data-query="Analyse the architecture and explain the layers and patterns used">
+                    <i class="bi bi-diagram-3 me-2 text-success"></i>Analyse the architecture
+                </button>
+                <button class="list-group-item list-group-item-action sample-query" data-query="Explain how the RepositoryService works and its role in the system">
+                    <i class="bi bi-code-slash me-2 text-info"></i>Explain RepositoryService
+                </button>
+                <button class="list-group-item list-group-item-action sample-query" data-query="What is the impact of modifying the AI Gateway component?">
+                    <i class="bi bi-shuffle me-2 text-warning"></i>Impact of changing AI Gateway
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @* ── Results panel ── *@
+    <div class="col-lg-8">
+        @* Placeholder state *@
+        <div id="emptyState" class="card shadow-sm h-100">
+            <div class="card-body d-flex flex-column align-items-center justify-content-center text-center py-5">
+                <i class="bi bi-robot display-1 text-muted mb-3"></i>
+                <h5 class="text-muted">Ready to Plan</h5>
+                <p class="text-muted mb-0">Type a question on the left and click <strong>Ask Planner</strong>.<br>The Planner will detect your intent, build a plan, and execute it.</p>
+            </div>
+        </div>
+
+        @* Loading state *@
+        <div id="loadingState" class="card shadow-sm h-100 d-none">
+            <div class="card-body d-flex flex-column align-items-center justify-content-center text-center py-5">
+                <div class="spinner-border text-primary mb-3" role="status" style="width:3rem;height:3rem;"></div>
+                <h5>Running Planner…</h5>
+                <p class="text-muted mb-0">Detecting intent, building plan, executing steps…</p>
+            </div>
+        </div>
+
+        @* Results state *@
+        <div id="resultsState" class="d-none">
+            @* Intent detection card *@
+            <div class="card shadow-sm mb-3">
+                <div class="card-header d-flex align-items-center gap-2">
+                    <i class="bi bi-crosshair text-primary"></i>
+                    <span class="fw-semibold">Intent Detection</span>
+                    <span id="planStatus" class="badge ms-auto"></span>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-sm-4">
+                            <div class="text-muted small">Detected Intent</div>
+                            <div id="intentBadge" class="mt-1"></div>
+                        </div>
+                        <div class="col-sm-3">
+                            <div class="text-muted small">Confidence</div>
+                            <div id="confidenceBar" class="mt-1"></div>
+                        </div>
+                        <div class="col-sm-5">
+                            <div class="text-muted small">Reasoning</div>
+                            <div id="reasoningText" class="mt-1 small text-muted fst-italic"></div>
+                        </div>
+                    </div>
+                    <div class="row g-3 mt-1">
+                        <div class="col-sm-6">
+                            <div class="text-muted small">Plan ID</div>
+                            <div id="planId" class="mt-1 small font-monospace text-muted"></div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="text-muted small">Total Duration</div>
+                            <div id="totalDuration" class="mt-1 small"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @* Plan steps *@
+            <div class="card shadow-sm mb-3">
+                <div class="card-header d-flex align-items-center gap-2">
+                    <i class="bi bi-list-check text-primary"></i>
+                    <span class="fw-semibold">Execution Plan</span>
+                    <span id="stepCount" class="badge bg-secondary ms-auto"></span>
+                </div>
+                <div id="stepsContainer" class="accordion accordion-flush"></div>
+            </div>
+
+            @* Final summary *@
+            <div class="card shadow-sm border-primary">
+                <div class="card-header bg-primary text-white d-flex align-items-center gap-2">
+                    <i class="bi bi-stars"></i>
+                    <span class="fw-semibold">Summary</span>
+                </div>
+                <div class="card-body">
+                    <div id="summaryText" class="lh-lg"></div>
+                </div>
+            </div>
+        </div>
+
+        @* Error state *@
+        <div id="errorState" class="alert alert-danger d-none">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <span id="errorText"></span>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    const intentColors = {
+        summarize_repository: 'primary',
+        analyze_architecture: 'success',
+        explain_code: 'info',
+        analyze_impact: 'warning',
+        general: 'secondary',
+    };
+    const intentLabels = {
+        summarize_repository: 'Summarise Repository',
+        analyze_architecture: 'Analyse Architecture',
+        explain_code: 'Explain Code',
+        analyze_impact: 'Analyse Impact',
+        general: 'General',
+    };
+    const statusIcons = {
+        completed: '<i class="bi bi-check-circle-fill text-success me-1"></i>',
+        failed:    '<i class="bi bi-x-circle-fill text-danger me-1"></i>',
+        pending:   '<i class="bi bi-circle text-muted me-1"></i>',
+        running:   '<span class="spinner-border spinner-border-sm text-primary me-1"></span>',
+    };
+
+    function show(id) {
+        ['emptyState','loadingState','resultsState','errorState'].forEach(s => {
+            document.getElementById(s).classList.toggle('d-none', s !== id);
+        });
+    }
+
+    function renderPlan(plan) {
+        const color = intentColors[plan.intent] || 'secondary';
+        const label = intentLabels[plan.intent] || plan.intent;
+        const pct   = Math.round(plan.confidence * 100);
+
+        document.getElementById('intentBadge').innerHTML =
+            `<span class="badge bg-${color} fs-6">${label}</span>`;
+
+        document.getElementById('confidenceBar').innerHTML = `
+            <div class="d-flex align-items-center gap-2">
+                <div class="progress flex-grow-1" style="height:8px">
+                    <div class="progress-bar bg-${color}" style="width:${pct}%"></div>
+                </div>
+                <span class="small fw-semibold">${pct}%</span>
+            </div>`;
+
+        document.getElementById('reasoningText').textContent = plan.reasoning || '';
+        document.getElementById('planId').textContent = plan.plan_id || '';
+        document.getElementById('totalDuration').innerHTML =
+            `<span class="badge bg-light text-dark border">${plan.total_duration_ms}ms</span>`;
+
+        const statusClass = plan.status === 'completed' ? 'bg-success' : 'bg-danger';
+        document.getElementById('planStatus').className = `badge ms-auto ${statusClass}`;
+        document.getElementById('planStatus').textContent = plan.status.toUpperCase();
+
+        document.getElementById('stepCount').textContent = `${plan.steps.length} step${plan.steps.length !== 1 ? 's' : ''}`;
+
+        const container = document.getElementById('stepsContainer');
+        container.innerHTML = '';
+        plan.steps.forEach((step, i) => {
+            const icon = statusIcons[step.status] || statusIcons['pending'];
+            const ms   = step.duration_ms != null ? `<span class="badge bg-light text-dark border ms-2">${step.duration_ms}ms</span>` : '';
+            const promptBadge = `<span class="badge bg-secondary ms-2 font-monospace">${step.prompt_name}</span>`;
+            const result = step.result
+                ? `<div class="mt-3 p-3 rounded" style="background:#f8f9fa;border-left:3px solid var(--bs-${color});font-size:.9rem;line-height:1.6;">${escapeHtml(step.result)}</div>`
+                : step.error
+                ? `<div class="alert alert-danger mt-2 mb-0 py-2 small">${escapeHtml(step.error)}</div>`
+                : '';
+
+            container.insertAdjacentHTML('beforeend', `
+                <div class="accordion-item">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button ${i > 0 ? 'collapsed' : ''}" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#step-${i}">
+                            ${icon}<strong class="me-1">Step ${step.step_number}:</strong>${escapeHtml(step.name)}${ms}${promptBadge}
+                        </button>
+                    </h2>
+                    <div id="step-${i}" class="accordion-collapse collapse ${i === 0 ? 'show' : ''}">
+                        <div class="accordion-body">
+                            <p class="text-muted small mb-2">${escapeHtml(step.description)}</p>
+                            ${result}
+                        </div>
+                    </div>
+                </div>`);
+        });
+
+        document.getElementById('summaryText').textContent = plan.summary || 'No summary available.';
+        show('resultsState');
+    }
+
+    function escapeHtml(str) {
+        return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    async function runPlanner() {
+        const query   = document.getElementById('queryInput').value.trim();
+        const context = document.getElementById('contextInput').value.trim();
+        if (!query) { alert('Please enter a question.'); return; }
+
+        show('loadingState');
+        document.getElementById('askBtn').disabled = true;
+
+        try {
+            const resp = await fetch('@Url.Action("Ask", "Planner")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query, context: context || null }),
+            });
+
+            if (!resp.ok) {
+                const err = await resp.json().catch(() => ({}));
+                throw new Error(err.error || `HTTP ${resp.status}`);
+            }
+
+            const plan = await resp.json();
+            renderPlan(plan);
+        } catch (err) {
+            document.getElementById('errorText').textContent = err.message || 'An unexpected error occurred.';
+            show('errorState');
+        } finally {
+            document.getElementById('askBtn').disabled = false;
+        }
+    }
+
+    document.getElementById('askBtn').addEventListener('click', runPlanner);
+
+    document.querySelectorAll('.sample-query').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.getElementById('queryInput').value = btn.dataset.query;
+            document.getElementById('queryInput').focus();
+        });
+    });
+
+    document.getElementById('queryInput').addEventListener('keydown', e => {
+        if (e.ctrlKey && e.key === 'Enter') runPlanner();
+    });
+})();
+</script>
+}

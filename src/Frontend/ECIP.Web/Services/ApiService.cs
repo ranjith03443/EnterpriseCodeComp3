@@ -86,6 +86,7 @@ public interface IApiService
     Task<List<PromptDto>?> GetPromptsAsync();
     Task<PromptDetailDto?> GetPromptAsync(string name);
     Task<bool> IsAiServiceAvailableAsync();
+    Task<PlannerResponseDto?> AskPlannerAsync(PlannerRequestDto request);
 }
 
 /// <summary>
@@ -485,5 +486,19 @@ public class ApiService : IApiService
             return wrapper?.Data;
         }
         catch (Exception ex) { _logger.LogError(ex, "Error getting prompt {Name}", name); return null; }
+    }
+
+    public async Task<PlannerResponseDto?> AskPlannerAsync(PlannerRequestDto request)
+    {
+        try
+        {
+            var body = new StringContent(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json");
+            var response = await _httpClient.PostAsync("/api/ai/planner/ask", body);
+            if (!response.IsSuccessStatusCode) return null;
+            var json = await response.Content.ReadAsStringAsync();
+            var wrapper = JsonSerializer.Deserialize<ApiResponse<PlannerResponseDto>>(json, JsonOptions);
+            return wrapper?.Data;
+        }
+        catch (Exception ex) { _logger.LogError(ex, "Error calling planner"); return null; }
     }
 }

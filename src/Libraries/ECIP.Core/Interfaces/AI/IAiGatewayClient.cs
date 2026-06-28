@@ -13,4 +13,5 @@ public interface IAiGatewayClient
     Task<List<PromptDto>?> GetPromptsAsync();
     Task<PromptDetailDto?> GetPromptAsync(string name);
     Task<bool> IsAvailableAsync();
+    Task<PlannerResponseDto?> AskPlannerAsync(PlannerRequestDto request);
 }
