@@ -1,0 +1,275 @@
+@using ECIP.Shared.DTOs
+@{
+    ViewData["Title"] = "Architecture Explorer";
+    var repos = ViewBag.Repositories as IReadOnlyList<ECIP.Core.Entities.RepositoryEntity> ?? [];
+    var selectedId = ViewBag.SelectedId as Guid?;
+    var arch = ViewBag.Architecture as ArchitectureViewDto;
+    var aiAvailable = (bool)(ViewBag.AiAvailable ?? false);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1"><i class="bi bi-diagram-3 me-2 text-primary"></i>Architecture Explorer</h1>
+        <p class="text-muted mb-0">Discover architectural layers, technology stack, and project relationships — then generate an AI architecture review.</p>
+    </div>
+</div>
+
+@* Repository selector *@
+<div class="card shadow-sm mb-4">
+    <div class="card-body py-3">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-6">
+                <label class="form-label fw-semibold mb-1">Repository</label>
+                <select name="repositoryId" class="form-select" onchange="this.form.submit()">
+                    <option value="">— Select a repository —</option>
+                    @foreach (var r in repos)
+                    {
+                        if (selectedId == r.Id)
+                        {
+                            <option value="@r.Id" selected>@r.Name (@r.Status)</option>
+                        }
+                        else
+                        {
+                            <option value="@r.Id">@r.Name (@r.Status)</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search me-1"></i>Explore
+                </button>
+            </div>
+            @if (repos.Count == 0)
+            {
+                <div class="col-12">
+                    <div class="alert alert-warning mb-0 py-2 small">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        No repositories found. <a asp-controller="Repository" asp-action="Index">Register a repository</a> and scan it first.
+                    </div>
+                </div>
+            }
+        </form>
+    </div>
+</div>
+
+@if (selectedId.HasValue && arch is null)
+{
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        No architecture data found. Please <a asp-controller="RepositoryIntelligence" asp-action="Index" asp-route-id="@selectedId">scan the repository</a> first to generate metadata.
+    </div>
+}
+
+@if (arch is not null)
+{
+    @* ── Overview stats ── *@
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card shadow-sm text-center h-100">
+                <div class="card-body">
+                    <div class="display-6 text-primary fw-bold">@arch.Layers.Count</div>
+                    <div class="text-muted small">Architecture Layers</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card shadow-sm text-center h-100">
+                <div class="card-body">
+                    <div class="display-6 text-success fw-bold">@arch.TotalProjects</div>
+                    <div class="text-muted small">Total Projects</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card shadow-sm text-center h-100">
+                <div class="card-body">
+                    <div class="display-6 text-info fw-bold">@arch.TechStack.Count</div>
+                    <div class="text-muted small">Technologies</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card shadow-sm text-center h-100 border-primary">
+                <div class="card-body">
+                    <div class="small text-muted mb-1">Architecture Style</div>
+                    <span class="badge bg-primary fs-6">@arch.ArchitectureStyle</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        @* ── Left: Layers ── *@
+        <div class="col-lg-7">
+            <div class="card shadow-sm h-100">
+                <div class="card-header d-flex align-items-center gap-2">
+                    <i class="bi bi-layers text-primary"></i>
+                    <span class="fw-semibold">Architectural Layers</span>
+                    <span class="badge bg-secondary ms-auto">@arch.Layers.Count layers</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="accordion accordion-flush" id="layersAccordion">
+                        @for (int i = 0; i < arch.Layers.Count; i++)
+                        {
+                            var layer = arch.Layers[i];
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button @(i > 0 ? "collapsed" : "")" type="button"
+                                            data-bs-toggle="collapse" data-bs-target="#layer-@i">
+                                        <span class="badge bg-@layer.Color me-2">@layer.Projects.Count</span>
+                                        <i class="bi @layer.Icon me-2 text-@layer.Color"></i>
+                                        <strong>@layer.Name</strong>
+                                        <span class="text-muted small ms-2">— @layer.Description</span>
+                                    </button>
+                                </h2>
+                                <div id="layer-@i" class="accordion-collapse collapse @(i == 0 ? "show" : "")">
+                                    <div class="accordion-body p-0">
+                                        <ul class="list-group list-group-flush">
+                                            @foreach (var project in layer.Projects)
+                                            {
+                                                <li class="list-group-item d-flex align-items-center gap-2 py-2">
+                                                    <i class="bi bi-box text-@layer.Color"></i>
+                                                    <div class="flex-grow-1 min-w-0">
+                                                        <div class="fw-semibold text-truncate">@project.Name</div>
+                                                        <div class="text-muted small text-truncate">@project.RelativePath</div>
+                                                    </div>
+                                                    <span class="badge bg-light text-dark border flex-shrink-0">@project.ProjectType</span>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* ── Right: Tech Stack + AI Analysis ── *@
+        <div class="col-lg-5">
+            @* Tech Stack *@
+            <div class="card shadow-sm mb-3">
+                <div class="card-header d-flex align-items-center gap-2">
+                    <i class="bi bi-stack text-primary"></i>
+                    <span class="fw-semibold">Technology Stack</span>
+                </div>
+                <div class="list-group list-group-flush">
+                    @foreach (var tech in arch.TechStack.Take(10))
+                    {
+                        <div class="list-group-item py-2">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <i class="bi @tech.Icon text-@tech.Color"></i>
+                                <span class="fw-semibold">@tech.Technology</span>
+                                <span class="badge bg-light text-dark border ms-auto">@tech.FileCount files</span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="progress flex-grow-1" style="height:5px">
+                                    <div class="progress-bar bg-@tech.Color" style="width:@tech.Percentage%"></div>
+                                </div>
+                                <small class="text-muted" style="width:40px;text-align:right">@tech.Percentage%</small>
+                            </div>
+                            <small class="text-muted">@tech.Role</small>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            @* AI Architecture Analysis *@
+            <div class="card shadow-sm">
+                <div class="card-header d-flex align-items-center gap-2">
+                    <i class="bi bi-robot text-primary"></i>
+                    <span class="fw-semibold">AI Architecture Review</span>
+                    @if (!aiAvailable)
+                    {
+                        <span class="badge bg-danger ms-auto">AI Offline</span>
+                    }
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small mb-3">
+                        Generate an AI-powered architecture review using the discovered layers and technology stack.
+                    </p>
+                    <button id="analyseBtn" class="btn btn-primary w-100 @(!aiAvailable ? "disabled" : "")"
+                            @(!aiAvailable ? "disabled" : "")
+                            data-repo-name="@arch.RepositoryName"
+                            data-layers="@System.Text.Json.JsonSerializer.Serialize(arch.Layers.Select(l => new { l.Name, l.Description, projects = l.Projects.Select(p => p.Name) }))"
+                            data-tech="@System.Text.Json.JsonSerializer.Serialize(arch.TechStack.Select(t => new { t.Technology, t.Role }))">
+                        <i class="bi bi-stars me-2"></i>Run AI Analysis
+                    </button>
+                    <div id="aiLoading" class="text-center py-3 d-none">
+                        <div class="spinner-border text-primary spinner-border-sm me-2"></div>
+                        Analysing architecture…
+                    </div>
+                    <div id="aiResult" class="mt-3 d-none">
+                        <hr>
+                        <div class="d-flex gap-2 mb-2">
+                            <span class="badge bg-primary" id="aiIntent"></span>
+                            <span class="badge bg-light text-dark border" id="aiDuration"></span>
+                        </div>
+                        <div id="aiText" class="lh-lg small"></div>
+                    </div>
+                    <div id="aiError" class="alert alert-danger mt-3 d-none small"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else if (!selectedId.HasValue)
+{
+    <div class="card shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-diagram-3 display-1 text-muted mb-3"></i>
+            <h5 class="text-muted">Select a Repository</h5>
+            <p class="text-muted mb-0">Choose a repository above to explore its architecture, layers, and technology stack.</p>
+        </div>
+    </div>
+}
+
+@section Scripts {
+<script>
+(function () {
+    const btn = document.getElementById('analyseBtn');
+    if (!btn) return;
+
+    btn.addEventListener('click', async () => {
+        const layers = JSON.parse(btn.dataset.layers || '[]');
+        const tech   = JSON.parse(btn.dataset.tech   || '[]');
+        const repo   = btn.dataset.repoName || 'this repository';
+
+        const context = [
+            `Repository: ${repo}`,
+            `Layers detected: ${layers.map(l => `${l.Name} (${l.projects.join(', ')})`).join(' | ')}`,
+            `Technology stack: ${tech.map(t => `${t.Technology} (${t.Role})`).join(', ')}`,
+        ].join('\n');
+
+        btn.classList.add('d-none');
+        document.getElementById('aiLoading').classList.remove('d-none');
+        document.getElementById('aiResult').classList.add('d-none');
+        document.getElementById('aiError').classList.add('d-none');
+
+        try {
+            const resp = await fetch('@Url.Action("Analyse", "Architecture")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ context }),
+            });
+
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const plan = await resp.json();
+
+            document.getElementById('aiIntent').textContent = plan.intent?.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) || 'Analysis';
+            document.getElementById('aiDuration').textContent = `${plan.total_duration_ms}ms`;
+            document.getElementById('aiText').textContent = plan.summary || 'No summary available.';
+            document.getElementById('aiResult').classList.remove('d-none');
+        } catch (err) {
+            document.getElementById('aiError').textContent = err.message;
+            document.getElementById('aiError').classList.remove('d-none');
+        } finally {
+            document.getElementById('aiLoading').classList.add('d-none');
+            btn.classList.remove('d-none');
+        }
+    });
+})();
+</script>
+}

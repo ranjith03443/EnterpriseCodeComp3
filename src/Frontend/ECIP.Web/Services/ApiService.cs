@@ -87,6 +87,7 @@ public interface IApiService
     Task<PromptDetailDto?> GetPromptAsync(string name);
     Task<bool> IsAiServiceAvailableAsync();
     Task<PlannerResponseDto?> AskPlannerAsync(PlannerRequestDto request);
+    Task<ArchitectureViewDto?> GetArchitectureAsync(Guid repositoryId);
 }
 
 /// <summary>
@@ -500,5 +501,18 @@ public class ApiService : IApiService
             return wrapper?.Data;
         }
         catch (Exception ex) { _logger.LogError(ex, "Error calling planner"); return null; }
+    }
+
+    public async Task<ArchitectureViewDto?> GetArchitectureAsync(Guid repositoryId)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"/api/architecture/{repositoryId}");
+            if (!response.IsSuccessStatusCode) return null;
+            var json = await response.Content.ReadAsStringAsync();
+            var wrapper = JsonSerializer.Deserialize<ApiResponse<ArchitectureViewDto>>(json, JsonOptions);
+            return wrapper?.Data;
+        }
+        catch (Exception ex) { _logger.LogError(ex, "Error getting architecture for {Id}", repositoryId); return null; }
     }
 }
