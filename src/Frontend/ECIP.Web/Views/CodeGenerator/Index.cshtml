@@ -1,0 +1,216 @@
+@using ECIP.Shared.DTOs.AI
+@{
+    ViewData["Title"] = "AI Code Generator";
+    var repos       = ViewBag.Repositories as IReadOnlyList<ECIP.Core.Entities.RepositoryEntity> ?? [];
+    var selectedId  = ViewBag.SelectedId as Guid?;
+    var aiAvailable = (bool)(ViewBag.AiAvailable ?? false);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1"><i class="bi bi-cpu me-2 text-primary"></i>AI Code Generator</h1>
+        <p class="text-muted mb-0">Scaffold production-ready code from templates — services, controllers, DTOs, repositories, and more.</p>
+    </div>
+    @if (!aiAvailable) { <span class="badge bg-danger fs-6"><i class="bi bi-exclamation-triangle me-1"></i>AI Offline</span> }
+</div>
+
+<div class="row g-4">
+    @* Config panel *@
+    <div class="col-lg-4">
+        @* Template picker *@
+        <div class="card shadow-sm mb-3">
+            <div class="card-header fw-semibold"><i class="bi bi-grid me-2 text-primary"></i>Template</div>
+            <div class="list-group list-group-flush" id="templateList">
+                @foreach (var t in new[]
+                {
+                    new { Id="service",       Name="Service Class",   Icon="bi-gear",             Desc="Business logic with DI" },
+                    new { Id="controller",    Name="API Controller",  Icon="bi-hdd-network",      Desc="CRUD endpoints" },
+                    new { Id="dto",           Name="DTO / Model",     Icon="bi-box",              Desc="Request/response model" },
+                    new { Id="repository",    Name="Repository",      Icon="bi-database",         Desc="Data access layer" },
+                    new { Id="interface",     Name="Interface",       Icon="bi-diagram-3",        Desc="Abstraction contract" },
+                    new { Id="test",          Name="Unit Test",       Icon="bi-check2-square",    Desc="xUnit test class" },
+                    new { Id="middleware",    Name="Middleware",      Icon="bi-arrow-left-right", Desc="Request pipeline" },
+                    new { Id="backgroundjob", Name="Background Job",  Icon="bi-clock",            Desc="IHostedService" },
+                })
+                {
+                    <button class="list-group-item list-group-item-action template-btn py-2" data-template="@t.Id">
+                        <i class="bi @t.Icon me-2 text-primary"></i>
+                        <span class="fw-semibold small">@t.Name</span>
+                        <span class="text-muted ms-2" style="font-size:.72rem">@t.Desc</span>
+                    </button>
+                }
+            </div>
+        </div>
+
+        @* Options *@
+        <div class="card shadow-sm">
+            <div class="card-header fw-semibold"><i class="bi bi-sliders me-2"></i>Options</div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Name <span class="text-danger">*</span></label>
+                    <input type="text" id="nameInput" class="form-control form-control-sm" placeholder="e.g. UserNotificationService">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Language</label>
+                    <select id="langSelect" class="form-select form-select-sm">
+                        <option value="C#" selected>C#</option>
+                        <option value="Python">Python</option>
+                        <option value="TypeScript">TypeScript</option>
+                        <option value="JavaScript">JavaScript</option>
+                        <option value="SQL">SQL</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Description</label>
+                    <textarea id="descInput" class="form-control form-control-sm" rows="2"
+                              placeholder="Briefly describe what this component should do…"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-semibold">Repository context (optional)</label>
+                    <select id="repoSelect" class="form-select form-select-sm">
+                        <option value="">None</option>
+                        @foreach (var r in repos)
+                        {
+                            if (selectedId == r.Id) { <option value="@r.Id" selected>@r.Name</option> }
+                            else                    { <option value="@r.Id">@r.Name</option> }
+                        }
+                    </select>
+                </div>
+                <button id="generateBtn" class="btn btn-primary w-100 @(!aiAvailable ? "disabled" : "")" @(!aiAvailable ? "disabled" : "")>
+                    <i class="bi bi-stars me-2"></i>Generate Code
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @* Output panel *@
+    <div class="col-lg-8">
+        <div id="emptyState" class="card shadow-sm">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-cpu display-1 text-muted mb-3"></i>
+                <h5 class="text-muted">Select a Template</h5>
+                <p class="text-muted mb-0">Choose a template on the left, fill in a name, and click Generate Code.</p>
+            </div>
+        </div>
+
+        <div id="loadingState" class="d-none card shadow-sm">
+            <div class="card-body text-center py-5">
+                <div class="spinner-border text-primary mb-3"></div>
+                <p class="text-muted">Generating code…</p>
+            </div>
+        </div>
+
+        <div id="errorState" class="alert alert-danger d-none small"></div>
+
+        <div id="resultState" class="d-none">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header d-flex align-items-center gap-2">
+                    <i class="bi bi-file-earmark-code text-primary"></i>
+                    <span id="resultTitle" class="fw-semibold"></span>
+                    <span id="resultLang" class="badge bg-primary ms-2"></span>
+                    <div class="ms-auto d-flex gap-2">
+                        <button id="copyBtn" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-clipboard me-1"></i>Copy
+                        </button>
+                        <button id="downloadBtn" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-download me-1"></i>Download
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <pre id="codeOutput" class="m-0 p-3" style="background:#1e1e1e;color:#d4d4d4;border-radius:0 0 .375rem .375rem;overflow-x:auto;font-size:.82rem;max-height:500px;overflow-y:auto"></pre>
+                </div>
+            </div>
+            <div class="card shadow-sm">
+                <div class="card-header fw-semibold small"><i class="bi bi-info-circle me-2"></i>Generation Details</div>
+                <div class="card-body small">
+                    <div class="row g-2">
+                        <div class="col-sm-4"><span class="text-muted">Template:</span> <strong id="detailTemplate"></strong></div>
+                        <div class="col-sm-4"><span class="text-muted">Language:</span> <strong id="detailLang"></strong></div>
+                        <div class="col-sm-4"><span class="text-muted">Duration:</span> <strong id="detailDuration"></strong></div>
+                    </div>
+                    <p id="detailExplanation" class="text-muted mt-2 mb-0"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    let selectedTemplate = '';
+
+    document.querySelectorAll('.template-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.template-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedTemplate = btn.dataset.template;
+        });
+    });
+
+    document.getElementById('generateBtn')?.addEventListener('click', async () => {
+        const name    = document.getElementById('nameInput').value.trim();
+        const lang    = document.getElementById('langSelect').value;
+        const desc    = document.getElementById('descInput').value.trim();
+        const repoId  = document.getElementById('repoSelect').value;
+
+        if (!selectedTemplate) { showError('Please select a template.'); return; }
+        if (!name)             { showError('Please enter a name.'); return; }
+
+        setState('loading');
+        try {
+            const resp = await fetch('@Url.Action("Generate", "CodeGenerator")', {
+                method : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body   : JSON.stringify({ template: selectedTemplate, language: lang, name, description: desc, context: repoId ? `Repository context: ${repoId}` : '' }),
+            });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            renderResult(data);
+        } catch (err) {
+            showError(err.message);
+        }
+    });
+
+    function renderResult(data) {
+        document.getElementById('resultTitle').textContent = data.files?.[0] ?? data.name;
+        document.getElementById('resultLang').textContent  = data.language;
+        document.getElementById('codeOutput').textContent  = data.code;
+        document.getElementById('detailTemplate').textContent  = data.template;
+        document.getElementById('detailLang').textContent      = data.language;
+        document.getElementById('detailDuration').textContent  = `${data.durationMs}ms`;
+        document.getElementById('detailExplanation').textContent = data.explanation;
+        setState('result');
+    }
+
+    document.getElementById('copyBtn')?.addEventListener('click', () => {
+        navigator.clipboard.writeText(document.getElementById('codeOutput').textContent);
+        const btn = document.getElementById('copyBtn');
+        btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Copied!';
+        setTimeout(() => btn.innerHTML = '<i class="bi bi-clipboard me-1"></i>Copy', 2000);
+    });
+
+    document.getElementById('downloadBtn')?.addEventListener('click', () => {
+        const code     = document.getElementById('codeOutput').textContent;
+        const filename = document.getElementById('resultTitle').textContent;
+        const blob     = new Blob([code], { type: 'text/plain' });
+        const a        = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: filename });
+        a.click();
+        URL.revokeObjectURL(a.href);
+    });
+
+    function showError(msg) {
+        document.getElementById('errorState').textContent = msg;
+        setState('error');
+    }
+
+    function setState(state) {
+        document.getElementById('emptyState').classList.toggle('d-none',   state !== 'empty');
+        document.getElementById('loadingState').classList.toggle('d-none', state !== 'loading');
+        document.getElementById('errorState').classList.toggle('d-none',   state !== 'error');
+        document.getElementById('resultState').classList.toggle('d-none',  state !== 'result');
+    }
+})();
+</script>
+}

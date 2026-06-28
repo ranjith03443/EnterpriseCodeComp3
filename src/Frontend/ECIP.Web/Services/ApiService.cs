@@ -92,6 +92,8 @@ public interface IApiService
     Task<KnowledgeGraphDto?> GetKnowledgeGraphAsync(Guid repositoryId);
     Task<OnboardingResponseDto?> AskOnboardingAsync(Guid repositoryId, string query);
     Task<ImpactAnalysisDto?> GetImpactAnalysisAsync(Guid repositoryId, string component, string changeType = "modify");
+    Task<CodeGenerationResponseDto?> GenerateCodeAsync(CodeGenerationRequestDto request);
+    Task<object?> GetCodeTemplatesAsync();
 }
 
 /// <summary>
@@ -569,5 +571,30 @@ public class ApiService : IApiService
             return JsonSerializer.Deserialize<ImpactAnalysisDto>(json, JsonOptions);
         }
         catch (Exception ex) { _logger.LogError(ex, "Error getting impact analysis for {Id}", repositoryId); return null; }
+    }
+
+    public async Task<CodeGenerationResponseDto?> GenerateCodeAsync(CodeGenerationRequestDto request)
+    {
+        try
+        {
+            var body = new StringContent(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json");
+            var response = await _httpClient.PostAsync("/api/codegen/generate", body);
+            if (!response.IsSuccessStatusCode) return null;
+            var json = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<CodeGenerationResponseDto>(json, JsonOptions);
+        }
+        catch (Exception ex) { _logger.LogError(ex, "Error generating code"); return null; }
+    }
+
+    public async Task<object?> GetCodeTemplatesAsync()
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync("/api/codegen/templates");
+            if (!response.IsSuccessStatusCode) return null;
+            var json = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<object>(json, JsonOptions);
+        }
+        catch (Exception ex) { _logger.LogError(ex, "Error getting code templates"); return null; }
     }
 }

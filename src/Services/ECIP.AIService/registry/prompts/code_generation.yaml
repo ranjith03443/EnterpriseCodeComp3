@@ -1,0 +1,37 @@
+name: code_generation
+description: Generate production-ready code from a template, name, and description
+version: "1.0"
+params:
+  - template
+  - language
+  - name
+  - description
+  - context
+  - features
+tags:
+  - code-generation
+  - scaffolding
+  - developer-productivity
+template: |
+  You are an expert {{ language }} developer working on an enterprise codebase.
+
+  Generate production-ready {{ language }} code for the following:
+
+  Template:    {{ template }}
+  Name:        {{ name }}
+  Description: {{ description }}
+  Features:    {{ features }}
+
+  === CODEBASE CONTEXT ===
+  {{ context }}
+
+  Requirements:
+  - Follow clean architecture and SOLID principles
+  - Include XML doc comments on public members
+  - Use dependency injection where appropriate
+  - Include meaningful method/property names
+  - Add error handling for boundary conditions
+  - Match the patterns already established in the codebase context
+
+  Output ONLY the code — no markdown fences, no explanation outside the code.
+  Add a brief comment block at the top explaining the generated file's purpose.
