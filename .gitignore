@@ -92,7 +92,6 @@ env/
 embeddings/
 vectorstore/
 faiss_index/
-knowledgegraph/
 generated/
 temp/
 

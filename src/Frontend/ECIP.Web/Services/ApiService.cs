@@ -88,6 +88,8 @@ public interface IApiService
     Task<bool> IsAiServiceAvailableAsync();
     Task<PlannerResponseDto?> AskPlannerAsync(PlannerRequestDto request);
     Task<ArchitectureViewDto?> GetArchitectureAsync(Guid repositoryId);
+    Task<FlowViewDto?> GetFlowsAsync(Guid repositoryId);
+    Task<KnowledgeGraphDto?> GetKnowledgeGraphAsync(Guid repositoryId);
 }
 
 /// <summary>
@@ -514,5 +516,31 @@ public class ApiService : IApiService
             return wrapper?.Data;
         }
         catch (Exception ex) { _logger.LogError(ex, "Error getting architecture for {Id}", repositoryId); return null; }
+    }
+
+    public async Task<FlowViewDto?> GetFlowsAsync(Guid repositoryId)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"/api/flow/{repositoryId}");
+            if (!response.IsSuccessStatusCode) return null;
+            var json = await response.Content.ReadAsStringAsync();
+            var wrapper = JsonSerializer.Deserialize<ApiResponse<FlowViewDto>>(json, JsonOptions);
+            return wrapper?.Data;
+        }
+        catch (Exception ex) { _logger.LogError(ex, "Error getting flows for {Id}", repositoryId); return null; }
+    }
+
+    public async Task<KnowledgeGraphDto?> GetKnowledgeGraphAsync(Guid repositoryId)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"/api/knowledgegraph/{repositoryId}");
+            if (!response.IsSuccessStatusCode) return null;
+            var json = await response.Content.ReadAsStringAsync();
+            var wrapper = JsonSerializer.Deserialize<ApiResponse<KnowledgeGraphDto>>(json, JsonOptions);
+            return wrapper?.Data;
+        }
+        catch (Exception ex) { _logger.LogError(ex, "Error getting knowledge graph for {Id}", repositoryId); return null; }
     }
 }

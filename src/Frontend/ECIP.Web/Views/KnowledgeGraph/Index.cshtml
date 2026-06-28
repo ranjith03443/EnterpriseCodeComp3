@@ -1,0 +1,253 @@
+@using ECIP.Shared.DTOs
+@{
+    ViewData["Title"] = "Knowledge Graph";
+    var repos      = ViewBag.Repositories as IReadOnlyList<ECIP.Core.Entities.RepositoryEntity> ?? [];
+    var selectedId = ViewBag.SelectedId as Guid?;
+    var graph      = ViewBag.Graph as KnowledgeGraphDto;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1"><i class="bi bi-graph-up me-2 text-primary"></i>Knowledge Graph</h1>
+        <p class="text-muted mb-0">Explore entities — repositories, projects, layers, and technologies — and the relationships that connect them.</p>
+    </div>
+</div>
+
+@* Repository selector *@
+<div class="card shadow-sm mb-4">
+    <div class="card-body py-3">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-6">
+                <label class="form-label fw-semibold mb-1">Repository</label>
+                <select name="repositoryId" class="form-select" onchange="this.form.submit()">
+                    <option value="">— Select a repository —</option>
+                    @foreach (var r in repos)
+                    {
+                        if (selectedId == r.Id) { <option value="@r.Id" selected>@r.Name</option> }
+                        else                    { <option value="@r.Id">@r.Name</option> }
+                    }
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-search me-1"></i>Build Graph</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (selectedId.HasValue && graph is null)
+{
+    <div class="alert alert-warning"><i class="bi bi-exclamation-triangle-fill me-2"></i>No graph data available. Please <a asp-controller="RepositoryIntelligence" asp-action="Index" asp-route-id="@selectedId">scan the repository</a> first.</div>
+}
+
+@if (graph is not null)
+{
+    @* Stats *@
+    <div class="row g-3 mb-4">
+        <div class="col-sm-3"><div class="card shadow-sm text-center"><div class="card-body"><div class="display-6 fw-bold text-primary">@graph.TotalNodes</div><div class="text-muted small">Nodes</div></div></div></div>
+        <div class="col-sm-3"><div class="card shadow-sm text-center"><div class="card-body"><div class="display-6 fw-bold text-success">@graph.TotalEdges</div><div class="text-muted small">Relationships</div></div></div></div>
+        <div class="col-sm-3"><div class="card shadow-sm text-center"><div class="card-body"><div class="display-6 fw-bold text-info">@graph.NodeTypes.Count</div><div class="text-muted small">Entity Types</div></div></div></div>
+        <div class="col-sm-3"><div class="card shadow-sm text-center"><div class="card-body"><div class="display-6 fw-bold text-warning">@graph.Edges.Select(e => e.Label).Distinct().Count()</div><div class="text-muted small">Relation Types</div></div></div></div>
+    </div>
+
+    <div class="row g-4">
+        @* Filter + search panel *@
+        <div class="col-lg-3">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header fw-semibold"><i class="bi bi-funnel me-2"></i>Filter</div>
+                <div class="card-body pb-2">
+                    <input type="text" id="searchInput" class="form-control form-control-sm mb-3" placeholder="Search nodes…">
+                    <div class="fw-semibold small mb-2">Entity Type</div>
+                    <div id="typeFilters">
+                        <div class="form-check mb-1">
+                            <input class="form-check-input type-filter" type="checkbox" value="" id="filter-all" checked>
+                            <label class="form-check-label small" for="filter-all">All Types</label>
+                        </div>
+                        @foreach (var t in graph.NodeTypes)
+                        {
+                            <div class="form-check mb-1">
+                                <input class="form-check-input type-filter" type="checkbox" value="@t" id="filter-@t" checked>
+                                <label class="form-check-label small" for="filter-@t">@t</label>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            @* Legend *@
+            <div class="card shadow-sm">
+                <div class="card-header fw-semibold small"><i class="bi bi-info-circle me-1"></i>Relationships</div>
+                <div class="list-group list-group-flush">
+                    @foreach (var rel in graph.Edges.Select(e => e.Label).Distinct())
+                    {
+                        <div class="list-group-item py-1 small"><i class="bi bi-arrow-right me-2 text-muted"></i>@rel</div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @* Node grid + detail panel *@
+        <div class="col-lg-9">
+            @* Node grid *@
+            <div class="card shadow-sm mb-3">
+                <div class="card-header d-flex align-items-center gap-2">
+                    <i class="bi bi-grid text-primary"></i>
+                    <span class="fw-semibold">Entity Explorer</span>
+                    <span id="visibleCount" class="badge bg-secondary ms-auto">@graph.TotalNodes nodes</span>
+                </div>
+                <div class="card-body">
+                    <div id="nodeGrid" class="row g-2">
+                        @foreach (var node in graph.Nodes)
+                        {
+                            var propsJson = System.Text.Json.JsonSerializer.Serialize(node.Properties);
+                            var tagsJson  = System.Text.Json.JsonSerializer.Serialize(node.Tags);
+                            <div class="col-sm-6 col-xl-4 node-card" data-type="@node.Type" data-label="@node.Label.ToLower()">
+                                <div class="card border-@node.Color node-item h-100" style="cursor:pointer"
+                                     data-id="@node.Id" data-label="@node.Label" data-type="@node.Type"
+                                     data-description="@node.Description" data-color="@node.Color"
+                                     data-icon="@node.Icon" data-props='@propsJson' data-tags='@tagsJson'>
+                                    <div class="card-body py-2 px-3">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <i class="bi @node.Icon text-@node.Color fs-5"></i>
+                                            <div class="min-w-0">
+                                                <div class="fw-semibold text-truncate small">@node.Label</div>
+                                                <span class="badge bg-@node.Color opacity-75" style="font-size:.65rem">@node.Type</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            @* Node detail panel *@
+            <div id="nodeDetail" class="card shadow-sm d-none">
+                <div class="card-header d-flex align-items-center gap-2">
+                    <i id="detailIcon" class="bi fs-5"></i>
+                    <span id="detailLabel" class="fw-semibold"></span>
+                    <span id="detailType" class="badge ms-2"></span>
+                    <button class="btn btn-sm btn-outline-secondary ms-auto" onclick="document.getElementById('nodeDetail').classList.add('d-none')">
+                        <i class="bi bi-x"></i>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <p id="detailDesc" class="text-muted small mb-3"></p>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="fw-semibold small mb-2">Properties</div>
+                            <div id="detailProps"></div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="fw-semibold small mb-2">Connected Nodes</div>
+                            <div id="detailConnections"></div>
+                        </div>
+                    </div>
+                    <div id="detailTags" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else if (!selectedId.HasValue)
+{
+    <div class="card shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-graph-up display-1 text-muted mb-3"></i>
+            <h5 class="text-muted">Select a Repository</h5>
+            <p class="text-muted mb-0">Choose a repository above to build and explore its knowledge graph.</p>
+        </div>
+    </div>
+}
+
+@section Scripts {
+<script>
+(function () {
+    const allNodes = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(graph?.Nodes ?? []));
+    const allEdges = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(graph?.Edges ?? []));
+
+    function getEdgesFor(nodeId) {
+        return allEdges.filter(e => e.sourceId === nodeId || e.targetId === nodeId);
+    }
+
+    function getConnectedNode(edge, nodeId) {
+        const otherId = edge.sourceId === nodeId ? edge.targetId : edge.sourceId;
+        return allNodes.find(n => n.id === otherId);
+    }
+
+    function showDetail(item) {
+        const data   = item.dataset;
+        const props  = JSON.parse(data.props  || '{}');
+        const tags   = JSON.parse(data.tags   || '[]');
+        const nodeId = data.id;
+        const color  = data.color;
+
+        document.getElementById('detailIcon').className  = `bi ${data.icon} fs-5 text-${color}`;
+        document.getElementById('detailLabel').textContent = data.label;
+        document.getElementById('detailType').className  = `badge ms-2 bg-${color}`;
+        document.getElementById('detailType').textContent = data.type;
+        document.getElementById('detailDesc').textContent = data.description;
+
+        const propsHtml = Object.entries(props).map(([k, v]) =>
+            `<div class="d-flex justify-content-between border-bottom py-1 small"><span class="text-muted">${k}</span><span class="fw-semibold">${v}</span></div>`
+        ).join('') || '<span class="text-muted small">No properties</span>';
+        document.getElementById('detailProps').innerHTML = propsHtml;
+
+        const edges = getEdgesFor(nodeId);
+        const connHtml = edges.length === 0
+            ? '<span class="text-muted small">No connections</span>'
+            : edges.map(e => {
+                const other = getConnectedNode(e, nodeId);
+                if (!other) return '';
+                const dir = e.sourceId === nodeId ? 'to' : 'from';
+                return `<div class="d-flex align-items-center gap-2 border-bottom py-1 small">
+                    <i class="bi ${other.icon} text-${other.color}"></i>
+                    <span class="text-muted">${e.label}</span>
+                    <strong class="text-truncate">${other.label}</strong>
+                    <span class="badge bg-light text-dark border ms-auto">${dir}</span>
+                </div>`;
+            }).join('');
+        document.getElementById('detailConnections').innerHTML = connHtml;
+
+        document.getElementById('detailTags').innerHTML = tags.map(t =>
+            `<span class="badge bg-light text-dark border me-1">${t}</span>`).join('');
+
+        document.getElementById('nodeDetail').classList.remove('d-none');
+        document.getElementById('nodeDetail').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    document.querySelectorAll('.node-item').forEach(el => {
+        el.addEventListener('click', () => showDetail(el));
+    });
+
+    function applyFilters() {
+        const search       = document.getElementById('searchInput')?.value.toLowerCase() || '';
+        const checkedTypes = [...document.querySelectorAll('.type-filter:checked')].map(c => c.value);
+        const allChecked   = checkedTypes.includes('');
+        let visible = 0;
+
+        document.querySelectorAll('.node-card').forEach(card => {
+            const type  = card.dataset.type;
+            const label = card.dataset.label;
+            const show  = (allChecked || checkedTypes.includes(type)) && label.includes(search);
+            card.style.display = show ? '' : 'none';
+            if (show) visible++;
+        });
+
+        const countEl = document.getElementById('visibleCount');
+        if (countEl) countEl.textContent = `${visible} nodes`;
+    }
+
+    document.getElementById('searchInput')?.addEventListener('input', applyFilters);
+    document.querySelectorAll('.type-filter').forEach(cb => {
+        cb.addEventListener('change', function () {
+            if (this.value === '') {
+                document.querySelectorAll('.type-filter:not([value=""])').forEach(c => c.checked = this.checked);
+            }
+            applyFilters();
+        });
+    });
+})();
+</script>
+}
