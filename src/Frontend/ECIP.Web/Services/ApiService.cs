@@ -90,6 +90,8 @@ public interface IApiService
     Task<ArchitectureViewDto?> GetArchitectureAsync(Guid repositoryId);
     Task<FlowViewDto?> GetFlowsAsync(Guid repositoryId);
     Task<KnowledgeGraphDto?> GetKnowledgeGraphAsync(Guid repositoryId);
+    Task<OnboardingResponseDto?> AskOnboardingAsync(Guid repositoryId, string query);
+    Task<ImpactAnalysisDto?> GetImpactAnalysisAsync(Guid repositoryId, string component, string changeType = "modify");
 }
 
 /// <summary>
@@ -542,5 +544,30 @@ public class ApiService : IApiService
             return wrapper?.Data;
         }
         catch (Exception ex) { _logger.LogError(ex, "Error getting knowledge graph for {Id}", repositoryId); return null; }
+    }
+
+    public async Task<OnboardingResponseDto?> AskOnboardingAsync(Guid repositoryId, string query)
+    {
+        try
+        {
+            var body = new StringContent(JsonSerializer.Serialize(new { Query = query }), Encoding.UTF8, "application/json");
+            var response = await _httpClient.PostAsync($"/api/onboarding/{repositoryId}/ask", body);
+            if (!response.IsSuccessStatusCode) return null;
+            var json = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<OnboardingResponseDto>(json, JsonOptions);
+        }
+        catch (Exception ex) { _logger.LogError(ex, "Error calling onboarding for {Id}", repositoryId); return null; }
+    }
+
+    public async Task<ImpactAnalysisDto?> GetImpactAnalysisAsync(Guid repositoryId, string component, string changeType = "modify")
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"/api/impact/{repositoryId}?component={Uri.EscapeDataString(component)}&changeType={changeType}");
+            if (!response.IsSuccessStatusCode) return null;
+            var json = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<ImpactAnalysisDto>(json, JsonOptions);
+        }
+        catch (Exception ex) { _logger.LogError(ex, "Error getting impact analysis for {Id}", repositoryId); return null; }
     }
 }
