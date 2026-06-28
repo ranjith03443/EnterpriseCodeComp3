@@ -5,9 +5,6 @@ using ECIP.Web.ViewModels;
 
 namespace ECIP.Web.Controllers;
 
-/// <summary>
-/// Dashboard controller for the main application page.
-/// </summary>
 public class DashboardController : Controller
 {
     private readonly IApiService _apiService;
@@ -21,60 +18,53 @@ public class DashboardController : Controller
         _logger = logger;
     }
 
-    /// <summary>
-    /// Gets the dashboard index page with health and version information.
-    /// </summary>
     public async Task<IActionResult> Index()
     {
         var viewModel = new DashboardViewModel();
 
         try
         {
-            // Get health status
-            var health = await _apiService.GetHealthAsync();
-            if (health != null)
-            {
-                viewModel.HealthStatus = health.Status ?? "Offline";
-                viewModel.HealthResponse = health;
-            }
-            else
-            {
-                viewModel.HealthStatus = "Offline";
-            }
+            // Fire all independent calls in parallel
+            var healthTask      = _apiService.GetHealthAsync();
+            var versionTask     = _apiService.GetVersionAsync();
+            var systemTask      = _apiService.GetSystemStatusAsync();
+            var reposTask       = _repositoryService.GetRepositoriesAsync();
 
-            // Get version information
-            var version = await _apiService.GetVersionAsync();
-            if (version != null)
+            await Task.WhenAll(healthTask, versionTask, systemTask, reposTask);
+
+            var health   = healthTask.Result;
+            var version  = versionTask.Result;
+            var system   = systemTask.Result;
+            var repos    = reposTask.Result;
+
+            viewModel.HealthStatus   = health?.Status ?? "Offline";
+            viewModel.HealthResponse = health;
+
+            if (version is not null)
             {
-                viewModel.Version = version.Version ?? string.Empty;
-                viewModel.Framework = version.Framework ?? string.Empty;
+                viewModel.Version         = version.Version ?? string.Empty;
+                viewModel.Framework       = version.Framework ?? string.Empty;
                 viewModel.VersionResponse = version;
             }
 
-            // Get system status
-            var systemStatus = await _apiService.GetSystemStatusAsync();
-            if (systemStatus != null)
-            {
-                viewModel.SystemStatus = systemStatus;
-            }
+            if (system is not null)
+                viewModel.SystemStatus = system;
 
-            // Get repository metrics for dashboard
-            var repositories = await _repositoryService.GetRepositoriesAsync();
-            viewModel.TotalRepositories = repositories.Count;
-            var active = repositories.FirstOrDefault(r => r.IsActive);
+            viewModel.TotalRepositories    = repos.Count;
+            var active                     = repos.FirstOrDefault(r => r.IsActive);
             viewModel.ActiveRepositoryName = active?.Name ?? "None";
 
-            if (active != null)
+            if (active is not null)
             {
                 var summary = await _apiService.GetRepositorySummaryAsync(active.Id);
-                if (summary != null)
+                if (summary is not null)
                 {
-                    viewModel.TotalFiles = summary.TotalFiles;
-                    viewModel.TotalProjects = summary.ProjectCount;
-                    viewModel.TotalFolders = summary.TotalFolders;
-                    viewModel.TotalLanguages = summary.LanguageCount;
-                    viewModel.TotalRepositorySize = summary.TotalSizeFormatted;
-                    viewModel.LastScanDate = summary.LastScanDate?.ToString("g") ?? "Never";
+                    viewModel.TotalFiles           = summary.TotalFiles;
+                    viewModel.TotalProjects        = summary.ProjectCount;
+                    viewModel.TotalFolders         = summary.TotalFolders;
+                    viewModel.TotalLanguages       = summary.LanguageCount;
+                    viewModel.TotalRepositorySize  = summary.TotalSizeFormatted;
+                    viewModel.LastScanDate         = summary.LastScanDate?.ToString("g") ?? "Never";
                 }
             }
 
@@ -84,7 +74,7 @@ public class DashboardController : Controller
         {
             _logger.LogError(ex, "Error loading dashboard data");
             viewModel.HealthStatus = "Offline";
-            viewModel.IsLoaded = true;
+            viewModel.IsLoaded     = true;
         }
 
         return View(viewModel);
