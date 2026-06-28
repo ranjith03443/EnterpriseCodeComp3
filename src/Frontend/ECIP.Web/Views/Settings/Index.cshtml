@@ -1,0 +1,257 @@
+@model ECIP.Web.ViewModels.AiSettingsViewModel
+@{
+    ViewData["Title"] = "AI Settings";
+    var providers = new[] { "openai", "gemini", "ollama", "mock" };
+    var providerLabels = new Dictionary<string, string>
+    {
+        ["openai"] = "OpenAI",
+        ["gemini"] = "Gemini",
+        ["ollama"] = "Ollama",
+        ["mock"] = "Mock LLM",
+    };
+    var providerIcons = new Dictionary<string, string>
+    {
+        ["openai"] = "bi-stars",
+        ["gemini"] = "bi-gem",
+        ["ollama"] = "bi-cpu",
+        ["mock"] = "bi-bug",
+    };
+}
+
+@if (!Model.AiServiceAvailable)
+{
+    <div class="alert alert-warning d-flex align-items-center gap-2 mb-4">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <div>
+            <strong>AI Service Unavailable</strong> — The FastAPI AI service is not running.
+            Start it with <code>uvicorn main:app --reload</code> from <code>src/Services/ECIP.AIService/</code>.
+            Default settings are shown below.
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(Model.SaveMessage))
+{
+    <div class="alert @(Model.SaveSuccess ? "alert-success" : "alert-danger") d-flex align-items-center gap-2 mb-4">
+        <i class="bi @(Model.SaveSuccess ? "bi-check-circle-fill" : "bi-x-circle-fill")"></i>
+        @Model.SaveMessage
+    </div>
+}
+
+<form asp-action="Save" asp-controller="Settings" method="post">
+
+    @* AI PROVIDER SELECTOR *@
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-bottom py-3">
+            <h5 class="fw-semibold mb-0"><i class="bi bi-cpu me-2 text-primary"></i>Active LLM Provider</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-3">
+                @foreach (var p in providers)
+                {
+                    var isActive = Model.ActiveProvider == p;
+                    <div class="col-6 col-md-3">
+                        <input type="radio" class="btn-check" name="ActiveProvider" id="provider_@p" value="@p" @(isActive ? "checked" : "") autocomplete="off">
+                        <label class="btn btn-outline-primary w-100 py-3 d-flex flex-column align-items-center gap-2" for="provider_@p">
+                            <i class="bi @providerIcons[p] fs-3"></i>
+                            <span class="fw-semibold">@providerLabels[p]</span>
+                            @if (p == "mock") { <small class="text-muted">No API key</small> }
+                        </label>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* PROVIDER SETTINGS TABLE *@
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-bottom py-3">
+            <h5 class="fw-semibold mb-0"><i class="bi bi-sliders me-2 text-primary"></i>Provider Configuration</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width:130px">Provider</th>
+                            <th>Model</th>
+                            <th>API Key</th>
+                            <th>Endpoint Override</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><i class="bi bi-stars me-1 text-success"></i><strong>OpenAI</strong></td>
+                            <td>
+                                <select name="OpenAiModel" class="form-select form-select-sm" style="width:160px">
+                                    <option value="gpt-4o" selected="@(Model.OpenAiModel == "gpt-4o")">gpt-4o</option>
+                                    <option value="gpt-4o-mini" selected="@(Model.OpenAiModel == "gpt-4o-mini")">gpt-4o-mini</option>
+                                    <option value="gpt-4-turbo" selected="@(Model.OpenAiModel == "gpt-4-turbo")">gpt-4-turbo</option>
+                                    <option value="gpt-3.5-turbo" selected="@(Model.OpenAiModel == "gpt-3.5-turbo")">gpt-3.5-turbo</option>
+                                </select>
+                            </td>
+                            <td><input type="password" name="OpenAiApiKey" class="form-control form-control-sm" value="@Model.OpenAiApiKey" placeholder="sk-..." style="width:220px" /></td>
+                            <td><input type="text" name="OpenAiEndpoint" class="form-control form-control-sm" value="@Model.OpenAiEndpoint" placeholder="Leave blank for default" /></td>
+                        </tr>
+                        <tr>
+                            <td><i class="bi bi-gem me-1 text-info"></i><strong>Gemini</strong></td>
+                            <td>
+                                <select name="GeminiModel" class="form-select form-select-sm" style="width:160px">
+                                    <option value="gemini-1.5-pro" selected="@(Model.GeminiModel == "gemini-1.5-pro")">gemini-1.5-pro</option>
+                                    <option value="gemini-1.5-flash" selected="@(Model.GeminiModel == "gemini-1.5-flash")">gemini-1.5-flash</option>
+                                    <option value="gemini-2.0-flash" selected="@(Model.GeminiModel == "gemini-2.0-flash")">gemini-2.0-flash</option>
+                                </select>
+                            </td>
+                            <td><input type="password" name="GeminiApiKey" class="form-control form-control-sm" value="@Model.GeminiApiKey" placeholder="AIza..." style="width:220px" /></td>
+                            <td><input type="text" name="GeminiEndpoint" class="form-control form-control-sm" value="@Model.GeminiEndpoint" placeholder="Leave blank for default" /></td>
+                        </tr>
+                        <tr>
+                            <td><i class="bi bi-cpu me-1 text-warning"></i><strong>Ollama</strong></td>
+                            <td>
+                                <select name="OllamaModel" class="form-select form-select-sm" style="width:160px">
+                                    <option value="llama3.2" selected="@(Model.OllamaModel == "llama3.2")">llama3.2</option>
+                                    <option value="llama3.1" selected="@(Model.OllamaModel == "llama3.1")">llama3.1</option>
+                                    <option value="mistral" selected="@(Model.OllamaModel == "mistral")">mistral</option>
+                                    <option value="codellama" selected="@(Model.OllamaModel == "codellama")">codellama</option>
+                                    <option value="phi3" selected="@(Model.OllamaModel == "phi3")">phi3</option>
+                                </select>
+                            </td>
+                            <td><span class="text-muted small">Not required</span></td>
+                            <td><input type="text" name="OllamaEndpoint" class="form-control form-control-sm" value="@Model.OllamaEndpoint" placeholder="http://localhost:11434" /></td>
+                        </tr>
+                        <tr class="table-light">
+                            <td><i class="bi bi-bug me-1 text-secondary"></i><strong>Mock LLM</strong></td>
+                            <td>
+                                <select name="MockDelayMs" class="form-select form-select-sm" style="width:160px">
+                                    <option value="0" selected="@(Model.MockDelayMs == 0)">No delay</option>
+                                    <option value="500" selected="@(Model.MockDelayMs == 500)">500ms</option>
+                                    <option value="1000" selected="@(Model.MockDelayMs == 1000)">1 second</option>
+                                    <option value="2000" selected="@(Model.MockDelayMs == 2000)">2 seconds</option>
+                                </select>
+                            </td>
+                            <td><span class="text-muted small">Not required</span></td>
+                            <td><span class="text-muted small">Runs in-process</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    @* EMBEDDINGS PROVIDER *@
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-bottom py-3">
+            <h5 class="fw-semibold mb-0"><i class="bi bi-grid-3x3-gap me-2 text-primary"></i>Embeddings Provider</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-3 mb-4">
+                @foreach (var p in new[] { "openai", "ollama", "mock" })
+                {
+                    var isActive = Model.ActiveEmbeddingProvider == p;
+                    <div class="col-4">
+                        <input type="radio" class="btn-check" name="ActiveEmbeddingProvider" id="embed_@p" value="@p" @(isActive ? "checked" : "") autocomplete="off">
+                        <label class="btn btn-outline-secondary w-100 py-2 d-flex align-items-center justify-content-center gap-2" for="embed_@p">
+                            <i class="bi @providerIcons[p]"></i> @providerLabels[p]
+                        </label>
+                    </div>
+                }
+            </div>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold">OpenAI Embedding Model</label>
+                    <select name="OpenAiEmbeddingModel" class="form-select form-select-sm">
+                        <option value="text-embedding-ada-002" selected="@(Model.OpenAiEmbeddingModel == "text-embedding-ada-002")">text-embedding-ada-002</option>
+                        <option value="text-embedding-3-small" selected="@(Model.OpenAiEmbeddingModel == "text-embedding-3-small")">text-embedding-3-small</option>
+                        <option value="text-embedding-3-large" selected="@(Model.OpenAiEmbeddingModel == "text-embedding-3-large")">text-embedding-3-large</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold">Ollama Embedding Model</label>
+                    <select name="OllamaEmbeddingModel" class="form-select form-select-sm">
+                        <option value="nomic-embed-text" selected="@(Model.OllamaEmbeddingModel == "nomic-embed-text")">nomic-embed-text</option>
+                        <option value="mxbai-embed-large" selected="@(Model.OllamaEmbeddingModel == "mxbai-embed-large")">mxbai-embed-large</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small fw-semibold">Ollama Endpoint</label>
+                    <input type="text" name="OllamaEmbeddingEndpoint" class="form-control form-control-sm" value="@Model.OllamaEmbeddingEndpoint" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ACTIONS *@
+    <div class="d-flex gap-3 mb-4">
+        <button type="submit" class="btn btn-primary px-4">
+            <i class="bi bi-save me-2"></i>Save Settings
+        </button>
+        <button type="button" class="btn btn-outline-secondary px-4" id="btnTestConnection">
+            <i class="bi bi-wifi me-2"></i>Test Connection
+        </button>
+    </div>
+
+</form>
+
+@* CONNECTION TEST RESULTS *@
+<div id="testResults" class="d-none mb-4">
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3">
+            <h5 class="fw-semibold mb-0"><i class="bi bi-activity me-2 text-primary"></i>Connection Test Results</h5>
+        </div>
+        <div class="card-body p-0">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Component</th>
+                        <th>Provider</th>
+                        <th>Status</th>
+                        <th>Message</th>
+                        <th>Latency</th>
+                    </tr>
+                </thead>
+                <tbody id="testResultsBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    document.getElementById('btnTestConnection').addEventListener('click', async function () {
+        const btn = this;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Testing...';
+
+        try {
+            const resp = await fetch('@Url.Action("TestConnection", "Settings")', {
+                method: 'POST',
+                headers: { 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value ?? '', 'Content-Type': 'application/json' }
+            });
+            const data = await resp.json();
+            const tbody = document.getElementById('testResultsBody');
+            tbody.innerHTML = '';
+
+            if (!data.success) {
+                tbody.innerHTML = `<tr><td colspan="5" class="text-danger text-center py-3">${data.message}</td></tr>`;
+            } else {
+                data.results.forEach(r => {
+                    const statusClass = r.status === 'connected' ? 'text-success' : r.status === 'configured' ? 'text-warning' : 'text-danger';
+                    const statusIcon = r.status === 'connected' ? 'bi-check-circle-fill' : r.status === 'configured' ? 'bi-info-circle-fill' : 'bi-x-circle-fill';
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${r.component}</td>
+                            <td>${r.provider}</td>
+                            <td class="${statusClass}"><i class="bi ${statusIcon} me-1"></i>${r.status}</td>
+                            <td class="text-muted small">${r.message}</td>
+                            <td class="text-muted small">${r.durationMs}ms</td>
+                        </tr>`;
+                });
+            }
+            document.getElementById('testResults').classList.remove('d-none');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-wifi me-2"></i>Test Connection';
+        }
+    });
+</script>
+}

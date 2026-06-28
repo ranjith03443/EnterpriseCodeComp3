@@ -1,0 +1,27 @@
+name: explain_code
+version: "1.0"
+description: Explains what a piece of code does, the patterns it uses, and its role in the system
+template: |
+  You are a senior developer performing a code review and explanation.
+
+  Code to explain:
+  {code}
+
+  Additional context about the system:
+  {context}
+
+  Provide:
+  1. A clear explanation of what this code does.
+  2. The design patterns or principles it applies.
+  3. Its role within the broader system.
+  4. Any notable implementation decisions.
+  5. Potential improvements or concerns, if any.
+
+  Write for an audience of mid-level developers who are new to this codebase.
+parameters:
+  - code
+  - context
+tags:
+  - code
+  - explanation
+  - onboarding

@@ -1,7 +1,10 @@
 using Serilog;
+using ECIP.API.Configuration;
 using ECIP.API.Extensions;
 using ECIP.API.Middlewares;
+using ECIP.API.Services;
 using ECIP.Core.Interfaces;
+using ECIP.Core.Interfaces.AI;
 using ECIP.Core.Interfaces.RepositoryIntelligence;
 using ECIP.Infrastructure.Extensions;
 using ECIP.Infrastructure.Persistence;
@@ -40,6 +43,16 @@ builder.Services.AddScoped<IFileDiscoveryService, FileDiscoveryService>();
 builder.Services.AddScoped<ILanguageDetector, LanguageDetector>();
 builder.Services.AddScoped<IRepositoryScanner, RepositoryScannerService>();
 builder.Services.AddScoped<IMetadataExtractionService, MetadataExtractionService>();
+
+// AI Service
+var aiSettings = builder.Configuration.GetSection("AiService").Get<AiServiceSettings>() ?? new AiServiceSettings();
+builder.Services.AddSingleton(aiSettings);
+builder.Services.AddHttpClient<IAiGatewayClient, AiGatewayClient>(client =>
+{
+    client.BaseAddress = new Uri(aiSettings.BaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(aiSettings.TimeoutSeconds);
+});
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", builder =>

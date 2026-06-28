@@ -1,5 +1,7 @@
+using System.Text;
 using System.Text.Json;
 using ECIP.Shared.DTOs;
+using ECIP.Shared.DTOs.AI;
 
 namespace ECIP.Web.Services;
 
@@ -77,6 +79,13 @@ public interface IApiService
     /// Gets export CSV URL for a repository.
     /// </summary>
     string GetExportCsvUrl(Guid repositoryId);
+
+    Task<AiSettingsDto?> GetAiSettingsAsync();
+    Task<AiSettingsDto?> SaveAiSettingsAsync(AiSettingsDto settings);
+    Task<List<ConnectionTestResultDto>?> TestAiConnectionAsync();
+    Task<List<PromptDto>?> GetPromptsAsync();
+    Task<PromptDetailDto?> GetPromptAsync(string name);
+    Task<bool> IsAiServiceAvailableAsync();
 }
 
 /// <summary>
@@ -400,5 +409,81 @@ public class ApiService : IApiService
     public string GetExportCsvUrl(Guid repositoryId)
     {
         return $"{_httpClient.BaseAddress}api/repository/{repositoryId}/export/csv";
+    }
+
+    public async Task<bool> IsAiServiceAvailableAsync()
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync("/api/ai/health");
+            return response.IsSuccessStatusCode;
+        }
+        catch { return false; }
+    }
+
+    public async Task<AiSettingsDto?> GetAiSettingsAsync()
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync("/api/ai/settings");
+            if (!response.IsSuccessStatusCode) return null;
+            var json = await response.Content.ReadAsStringAsync();
+            var wrapper = JsonSerializer.Deserialize<ApiResponse<AiSettingsDto>>(json, JsonOptions);
+            return wrapper?.Data;
+        }
+        catch (Exception ex) { _logger.LogError(ex, "Error getting AI settings"); return null; }
+    }
+
+    public async Task<AiSettingsDto?> SaveAiSettingsAsync(AiSettingsDto settings)
+    {
+        try
+        {
+            var body = new StringContent(JsonSerializer.Serialize(settings), Encoding.UTF8, "application/json");
+            var response = await _httpClient.PutAsync("/api/ai/settings", body);
+            if (!response.IsSuccessStatusCode) return null;
+            var json = await response.Content.ReadAsStringAsync();
+            var wrapper = JsonSerializer.Deserialize<ApiResponse<AiSettingsDto>>(json, JsonOptions);
+            return wrapper?.Data;
+        }
+        catch (Exception ex) { _logger.LogError(ex, "Error saving AI settings"); return null; }
+    }
+
+    public async Task<List<ConnectionTestResultDto>?> TestAiConnectionAsync()
+    {
+        try
+        {
+            var response = await _httpClient.PostAsync("/api/ai/settings/test", new StringContent("{}", Encoding.UTF8, "application/json"));
+            if (!response.IsSuccessStatusCode) return null;
+            var json = await response.Content.ReadAsStringAsync();
+            var wrapper = JsonSerializer.Deserialize<ApiResponse<List<ConnectionTestResultDto>>>(json, JsonOptions);
+            return wrapper?.Data;
+        }
+        catch (Exception ex) { _logger.LogError(ex, "Error testing AI connection"); return null; }
+    }
+
+    public async Task<List<PromptDto>?> GetPromptsAsync()
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync("/api/ai/prompts");
+            if (!response.IsSuccessStatusCode) return null;
+            var json = await response.Content.ReadAsStringAsync();
+            var wrapper = JsonSerializer.Deserialize<ApiResponse<List<PromptDto>>>(json, JsonOptions);
+            return wrapper?.Data;
+        }
+        catch (Exception ex) { _logger.LogError(ex, "Error getting prompts"); return null; }
+    }
+
+    public async Task<PromptDetailDto?> GetPromptAsync(string name)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"/api/ai/prompts/{name}");
+            if (!response.IsSuccessStatusCode) return null;
+            var json = await response.Content.ReadAsStringAsync();
+            var wrapper = JsonSerializer.Deserialize<ApiResponse<PromptDetailDto>>(json, JsonOptions);
+            return wrapper?.Data;
+        }
+        catch (Exception ex) { _logger.LogError(ex, "Error getting prompt {Name}", name); return null; }
     }
 }

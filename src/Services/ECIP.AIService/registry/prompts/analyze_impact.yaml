@@ -1,0 +1,29 @@
+name: analyze_impact
+version: "1.0"
+description: Analyses the potential impact of a change to a component across the system
+template: |
+  You are a software architect specialising in change impact analysis.
+
+  A change is proposed to the following component:
+  Component: {component_name}
+  Type: {component_type}
+
+  Known dependencies and callers:
+  {dependencies}
+
+  Analyse and report:
+  1. Direct components affected by this change.
+  2. Indirect (transitive) components that may be affected.
+  3. Risk level: Low / Medium / High — with justification.
+  4. Recommended testing areas.
+  5. Any migration or backward compatibility considerations.
+
+  Be precise and avoid over-stating risk without evidence.
+parameters:
+  - component_name
+  - component_type
+  - dependencies
+tags:
+  - impact
+  - analysis
+  - change-management

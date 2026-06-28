@@ -1,0 +1,27 @@
+ai:
+  active_provider: mock
+  active_embedding_provider: mock
+  mock_delay_ms: 500
+
+providers:
+  openai:
+    api_key: ""
+    model: gpt-4o
+    endpoint: ""
+  gemini:
+    api_key: ""
+    model: gemini-1.5-pro
+    endpoint: ""
+  ollama:
+    model: llama3.2
+    endpoint: http://localhost:11434
+
+embeddings:
+  openai:
+    api_key: ""
+    model: text-embedding-ada-002
+    endpoint: ""
+  ollama:
+    model: nomic-embed-text
+    endpoint: http://localhost:11434
+  mock: {}

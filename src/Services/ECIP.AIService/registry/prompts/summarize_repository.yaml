@@ -1,0 +1,24 @@
+name: summarize_repository
+version: "1.0"
+description: Produces a concise summary of a repository's purpose, architecture, and key components
+template: |
+  You are an expert software architect and code analyst.
+
+  Analyze the following repository metadata and produce a concise, professional summary.
+
+  Repository Metadata:
+  {context}
+
+  Provide:
+  1. A one-paragraph overview of the repository's purpose and business domain.
+  2. A brief description of the architecture and technology stack.
+  3. Key components and their responsibilities.
+  4. Notable patterns or conventions observed.
+
+  Be factual, concise, and professional. Avoid speculation.
+parameters:
+  - context
+tags:
+  - repository
+  - summary
+  - onboarding

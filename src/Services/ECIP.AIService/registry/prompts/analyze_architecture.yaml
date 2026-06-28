@@ -1,0 +1,23 @@
+name: analyze_architecture
+version: "1.0"
+description: Analyses the architectural layers, patterns, and structure of a codebase
+template: |
+  You are a senior software architect reviewing an enterprise codebase.
+
+  Given the following architectural metadata:
+  {context}
+
+  Analyse and describe:
+  1. The architectural layers present (e.g. Presentation, Application, Domain, Infrastructure).
+  2. The design patterns in use (e.g. Repository, CQRS, Event-driven, MVC).
+  3. Inter-component dependencies and coupling levels.
+  4. Strengths of the current architecture.
+  5. Areas that may benefit from architectural improvement.
+
+  Provide actionable, professional observations suitable for an architecture review board.
+parameters:
+  - context
+tags:
+  - architecture
+  - analysis
+  - review
