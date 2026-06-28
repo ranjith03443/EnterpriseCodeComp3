@@ -54,6 +54,9 @@ public class AiGatewayClient : IAiGatewayClient
     public async Task<PromptDetailDto?> GetPromptAsync(string name)
         => await GetAsync<PromptDetailDto>($"/registry/prompts/{name}");
 
+    public async Task<PlannerResponseDto?> AskPlannerAsync(PlannerRequestDto request)
+        => await PostAsync<PlannerRequestDto, PlannerResponseDto>("/planner/ask", request);
+
     private async Task<TResponse?> GetAsync<TResponse>(string path)
     {
         try

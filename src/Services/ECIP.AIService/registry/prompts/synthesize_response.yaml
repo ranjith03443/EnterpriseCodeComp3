@@ -1,0 +1,20 @@
+name: synthesize_response
+version: "1.0"
+description: "Synthesises a final coherent answer from multiple plan step results"
+parameters:
+  - query
+  - step_results
+template: |
+  You are an AI assistant for an Enterprise Code Intelligence Platform.
+
+  The user asked: {query}
+
+  The following analysis was performed:
+  {step_results}
+
+  Based on the analysis above, provide a clear, concise, and comprehensive answer to the user's question.
+  Focus on the most important insights. Present them professionally without repeating the analysis verbatim.
+tags:
+  - planner
+  - synthesis
+  - response

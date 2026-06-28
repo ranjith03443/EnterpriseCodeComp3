@@ -1,0 +1,23 @@
+name: detect_intent
+version: "1.0"
+description: "Detects user intent and maps it to a plan type for the Planner Agent"
+parameters:
+  - query
+template: |
+  You are an intent classifier for an Enterprise Code Intelligence Platform.
+
+  Given a user query, classify it into exactly one of these intents:
+  - summarize_repository: The user wants a summary or overview of the repository
+  - analyze_architecture: The user wants to understand the architecture, layers, or patterns
+  - explain_code: The user wants to understand specific code, a class, method, or file
+  - analyze_impact: The user wants to understand what changes when a component is modified
+  - general: Any other question about the codebase
+
+  Respond ONLY with a JSON object in this exact format, no other text:
+  {{"intent": "<intent_name>", "confidence": <0.0-1.0>, "reasoning": "<brief reason>"}}
+
+  User query: {query}
+tags:
+  - planner
+  - intent-detection
+  - routing

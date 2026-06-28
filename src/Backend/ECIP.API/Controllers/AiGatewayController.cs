@@ -97,4 +97,13 @@ public class AiGatewayController : ControllerBase
             return NotFound(new ApiResponse<string>($"Prompt '{name}' not found.", false));
         return Ok(new ApiResponse<PromptDetailDto>(prompt, "Prompt retrieved."));
     }
+
+    [HttpPost("planner/ask")]
+    public async Task<IActionResult> PlannerAsk([FromBody] PlannerRequestDto request)
+    {
+        var result = await _gateway.AskPlannerAsync(request);
+        if (result is null)
+            return StatusCode(503, new ApiResponse<string>("AI service unavailable.", false));
+        return Ok(new ApiResponse<PlannerResponseDto>(result, "Planner executed successfully."));
+    }
 }
