@@ -1,0 +1,184 @@
+@using ECIP.Shared.DTOs.AI
+@{
+    ViewData["Title"] = "Onboarding Assistant";
+    var repos       = ViewBag.Repositories as IReadOnlyList<ECIP.Core.Entities.RepositoryEntity> ?? [];
+    var selectedId  = ViewBag.SelectedId as Guid?;
+    var aiAvailable = (bool)(ViewBag.AiAvailable ?? false);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1"><i class="bi bi-person-badge me-2 text-primary"></i>Onboarding Assistant</h1>
+        <p class="text-muted mb-0">Ask natural language questions about any scanned repository — powered by RAG over your codebase metadata.</p>
+    </div>
+    @if (!aiAvailable)
+    {
+        <span class="badge bg-danger fs-6"><i class="bi bi-exclamation-triangle me-1"></i>AI Offline</span>
+    }
+</div>
+
+@* Repository selector *@
+<div class="card shadow-sm mb-4">
+    <div class="card-body py-3">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-6">
+                <label class="form-label fw-semibold mb-1">Repository</label>
+                <select name="repositoryId" class="form-select" onchange="this.form.submit()">
+                    <option value="">— Select a repository —</option>
+                    @foreach (var r in repos)
+                    {
+                        if (selectedId == r.Id) { <option value="@r.Id" selected>@r.Name</option> }
+                        else                    { <option value="@r.Id">@r.Name</option> }
+                    }
+                </select>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (selectedId.HasValue)
+{
+    <div class="row g-4">
+        @* Chat panel *@
+        <div class="col-lg-8">
+            <div class="card shadow-sm" style="min-height:500px">
+                <div class="card-header d-flex align-items-center gap-2">
+                    <i class="bi bi-chat-dots text-primary"></i>
+                    <span class="fw-semibold">Ask about the codebase</span>
+                    @if (!aiAvailable) { <span class="badge bg-danger ms-auto">AI Offline</span> }
+                </div>
+                <div class="card-body d-flex flex-column" style="height:450px">
+                    <div id="chatHistory" class="flex-grow-1 overflow-auto mb-3" style="max-height:340px"></div>
+
+                    <div id="typingIndicator" class="d-none text-muted small mb-2">
+                        <div class="spinner-border spinner-border-sm me-2"></div>Thinking…
+                    </div>
+
+                    <div class="input-group">
+                        <textarea id="queryInput" class="form-control" rows="2"
+                                  placeholder="e.g. How does repository scanning work? What is the role of ECIP.Core?"
+                                  @(!aiAvailable ? "disabled" : "")></textarea>
+                        <button id="askBtn" class="btn btn-primary" @(!aiAvailable ? "disabled" : "")>
+                            <i class="bi bi-send-fill"></i>
+                        </button>
+                    </div>
+                    <div class="text-muted" style="font-size:.75rem;margin-top:4px">Press Ctrl+Enter to send</div>
+                </div>
+            </div>
+        </div>
+
+        @* Sample questions + tips *@
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header fw-semibold small"><i class="bi bi-lightbulb me-2 text-warning"></i>Sample Questions</div>
+                <div class="list-group list-group-flush" id="samples">
+                    @foreach (var q in new[]
+                    {
+                        "How does repository scanning work?",
+                        "What is the role of ECIP.Core?",
+                        "Where is the AI Gateway implemented?",
+                        "How do I add a new API endpoint?",
+                        "What languages does this repository use?",
+                        "How is the database layer structured?",
+                    })
+                    {
+                        <button class="list-group-item list-group-item-action small sample-q py-2">@q</button>
+                    }
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-header fw-semibold small"><i class="bi bi-info-circle me-2"></i>How it works</div>
+                <div class="card-body small text-muted">
+                    <ol class="ps-3 mb-0">
+                        <li class="mb-1">Your question is matched against discovered files, projects, and languages.</li>
+                        <li class="mb-1">Relevant chunks are retrieved (keyword scoring).</li>
+                        <li class="mb-1">The AI answers using the retrieved context as grounding.</li>
+                        <li>Sources are shown below each answer.</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-person-badge display-1 text-muted mb-3"></i>
+            <h5 class="text-muted">Select a Repository</h5>
+            <p class="text-muted mb-0">Choose a scanned repository above to start asking questions about its codebase.</p>
+        </div>
+    </div>
+}
+
+@section Scripts {
+<script>
+(function () {
+    const repoId    = '@selectedId';
+    const chatEl    = document.getElementById('chatHistory');
+    const inputEl   = document.getElementById('queryInput');
+    const askBtn    = document.getElementById('askBtn');
+    const typing    = document.getElementById('typingIndicator');
+    let   history   = [];
+
+    function appendMessage(role, text, sources) {
+        const isUser = role === 'user';
+        const div = document.createElement('div');
+        div.className = `d-flex ${isUser ? 'justify-content-end' : 'justify-content-start'} mb-3`;
+
+        let sourcesHtml = '';
+        if (sources && sources.length > 0) {
+            sourcesHtml = `<div class="mt-2 border-top pt-1" style="font-size:.72rem">
+                <span class="text-muted">Sources: </span>
+                ${sources.map(s => `<span class="badge bg-light text-dark border me-1">${s.source.split('/').pop()}</span>`).join('')}
+            </div>`;
+        }
+
+        div.innerHTML = `
+            <div class="rounded-3 px-3 py-2 ${isUser ? 'bg-primary text-white' : 'bg-light border'}"
+                 style="max-width:85%;white-space:pre-wrap">
+                ${isUser ? '' : '<i class="bi bi-robot me-1 text-primary"></i>'}
+                ${text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+                ${isUser ? '' : sourcesHtml}
+            </div>`;
+        chatEl.appendChild(div);
+        chatEl.scrollTop = chatEl.scrollHeight;
+    }
+
+    async function ask() {
+        const query = inputEl.value.trim();
+        if (!query || !repoId) return;
+        inputEl.value = '';
+        appendMessage('user', query);
+        history.push({ role: 'user', content: query });
+
+        askBtn.disabled   = true;
+        typing.classList.remove('d-none');
+
+        try {
+            const resp = await fetch('@Url.Action("Ask", "Onboarding")', {
+                method : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body   : JSON.stringify({ repositoryId: repoId, query }),
+            });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+            appendMessage('assistant', data.answer, data.sources);
+            history.push({ role: 'assistant', content: data.answer });
+        } catch (err) {
+            appendMessage('assistant', `Error: ${err.message}`);
+        } finally {
+            askBtn.disabled = false;
+            typing.classList.add('d-none');
+        }
+    }
+
+    askBtn?.addEventListener('click', ask);
+    inputEl?.addEventListener('keydown', e => { if (e.ctrlKey && e.key === 'Enter') ask(); });
+    document.querySelectorAll('.sample-q').forEach(b => {
+        b.addEventListener('click', () => { inputEl.value = b.textContent.trim(); inputEl.focus(); });
+    });
+})();
+</script>
+}

@@ -39,6 +39,28 @@ _MOCK_RESPONSES: list[tuple[list[str], str]] = [
         "and FastAPI for AI services. Key strengths include strong dependency injection, "
         "interface-driven design, and a well-structured multi-project solution.",
     ),
+    (
+        ["retrieved context", "developer question", "new developer", "understand a codebase",
+         "codebase context", "retrieved sources", "onboarding"],
+        "Welcome to the codebase! Based on the retrieved context, this is an enterprise .NET 8 solution "
+        "following Clean Architecture. The entry point for API requests is ECIP.API (ASP.NET Core Web API), "
+        "which delegates business logic to service classes. ECIP.Core contains your domain interfaces and "
+        "entities — start here to understand the domain model. ECIP.Infrastructure handles database access "
+        "via Entity Framework Core with SQLite. For the AI features, ECIP.AIService (FastAPI, Python) "
+        "provides LLM integrations. A great first step is to explore the Controllers in ECIP.API and "
+        "trace a request through the service and repository layers.",
+    ),
+    (
+        ["change impact", "impact narrative", "risk level", "affected layers", "affected files",
+         "testing strategy", "cross-cutting", "modify the component"],
+        "Modifying this component carries a measured risk given its connections across multiple architectural "
+        "layers. The primary concern is breaking interface contracts that downstream services rely on — "
+        "any signature changes must be propagated to all callers. Cross-cutting concerns such as shared DTOs "
+        "in ECIP.Shared and dependency injection registrations in Program.cs will need review. "
+        "Recommended testing strategy: write or update unit tests for the changed class, add integration "
+        "tests covering the affected API endpoints, and run the full regression suite before merging. "
+        "Consider feature-flagging the change if it touches a high-traffic path.",
+    ),
 ]
 
 _DEFAULT_RESPONSE = (

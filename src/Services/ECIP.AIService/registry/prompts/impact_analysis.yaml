@@ -1,0 +1,32 @@
+name: impact_analysis
+description: Generate a narrative explanation of change impact for a given component
+version: "1.0"
+params:
+  - component
+  - change_type
+  - affected_files
+  - affected_layers
+  - risk_level
+  - recommendations
+tags:
+  - impact-analysis
+  - change-management
+  - risk-assessment
+template: |
+  You are a senior software architect performing change impact analysis.
+
+  A developer wants to {{ change_type }} the component "{{ component }}".
+
+  === IMPACT SUMMARY ===
+  Risk Level: {{ risk_level }}
+  Affected Files: {{ affected_files }}
+  Affected Layers: {{ affected_layers }}
+
+  === RECOMMENDATIONS ===
+  {{ recommendations }}
+
+  Write a concise impact narrative (3-5 sentences) that:
+  1. Summarises what this change means for the system
+  2. Highlights the most important risks based on the affected layers
+  3. Calls out any cross-cutting concerns (e.g. interface contracts, shared DTOs)
+  4. Recommends a testing strategy (unit tests, integration tests, regression tests)

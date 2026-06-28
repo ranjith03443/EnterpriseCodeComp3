@@ -1,0 +1,237 @@
+@using ECIP.Shared.DTOs.AI
+@{
+    ViewData["Title"] = "Change Impact Analysis";
+    var repos       = ViewBag.Repositories as IReadOnlyList<ECIP.Core.Entities.RepositoryEntity> ?? [];
+    var selectedId  = ViewBag.SelectedId as Guid?;
+    var aiAvailable = (bool)(ViewBag.AiAvailable ?? false);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1"><i class="bi bi-shuffle me-2 text-primary"></i>Change Impact Analysis</h1>
+        <p class="text-muted mb-0">Enter a component name to discover which files, projects, and layers would be affected by modifying it.</p>
+    </div>
+</div>
+
+@* Repository + component form *@
+<div class="card shadow-sm mb-4">
+    <div class="card-body py-3">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label class="form-label fw-semibold mb-1">Repository</label>
+                <select id="repoSelect" class="form-select">
+                    <option value="">— Select a repository —</option>
+                    @foreach (var r in repos)
+                    {
+                        if (selectedId == r.Id) { <option value="@r.Id" selected>@r.Name</option> }
+                        else                    { <option value="@r.Id">@r.Name</option> }
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-semibold mb-1">Component Name</label>
+                <input type="text" id="componentInput" class="form-control" placeholder="e.g. AiGatewayClient, RepositoryScanner, EcipDbContext">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-semibold mb-1">Change Type</label>
+                <select id="changeTypeSelect" class="form-select">
+                    <option value="modify">Modify</option>
+                    <option value="refactor">Refactor</option>
+                    <option value="delete">Delete</option>
+                    <option value="rename">Rename</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button id="analyzeBtn" class="btn btn-primary w-100">
+                    <i class="bi bi-search me-1"></i>Analyse
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Loading *@
+<div id="loadingPanel" class="d-none text-center py-4">
+    <div class="spinner-border text-primary me-2"></div>
+    <span class="text-muted">Analysing impact…</span>
+</div>
+
+@* Error *@
+<div id="errorPanel" class="alert alert-danger d-none small"></div>
+
+@* Results *@
+<div id="resultsPanel" class="d-none">
+    @* Risk summary *@
+    <div class="row g-3 mb-4" id="statsRow"></div>
+
+    <div class="row g-4">
+        @* Affected layers *@
+        <div class="col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header fw-semibold"><i class="bi bi-layers me-2 text-primary"></i>Affected Layers</div>
+                <div id="layersList" class="list-group list-group-flush"></div>
+            </div>
+        </div>
+
+        @* Affected files *@
+        <div class="col-lg-8">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header d-flex align-items-center gap-2">
+                    <i class="bi bi-file-earmark-code text-primary"></i>
+                    <span class="fw-semibold">Affected Files</span>
+                    <span id="fileCount" class="badge bg-secondary ms-auto"></span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height:300px;overflow-y:auto">
+                        <table class="table table-sm table-hover mb-0">
+                            <thead class="table-light sticky-top">
+                                <tr><th>File</th><th>Layer</th><th>Language</th><th>Match</th></tr>
+                            </thead>
+                            <tbody id="filesTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            @* Recommendations *@
+            <div class="card shadow-sm mb-3">
+                <div class="card-header fw-semibold"><i class="bi bi-clipboard-check me-2 text-success"></i>Recommendations</div>
+                <div class="list-group list-group-flush" id="recsList"></div>
+            </div>
+
+            @* AI narrative *@
+            <div class="card shadow-sm">
+                <div class="card-header d-flex align-items-center gap-2">
+                    <i class="bi bi-robot text-primary"></i>
+                    <span class="fw-semibold">AI Impact Narrative</span>
+                    @if (!aiAvailable) { <span class="badge bg-danger ms-auto">AI Offline</span> }
+                </div>
+                <div class="card-body">
+                    <div id="narrativeText" class="lh-lg small text-muted fst-italic"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!selectedId.HasValue)
+{
+    <div class="card shadow-sm">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-shuffle display-1 text-muted mb-3"></i>
+            <h5 class="text-muted">Select a Repository</h5>
+            <p class="text-muted mb-0">Choose a scanned repository and enter a component name to begin impact analysis.</p>
+        </div>
+    </div>
+}
+
+@section Scripts {
+<script>
+(function () {
+    const analyzeBtn    = document.getElementById('analyzeBtn');
+    const loadingPanel  = document.getElementById('loadingPanel');
+    const errorPanel    = document.getElementById('errorPanel');
+    const resultsPanel  = document.getElementById('resultsPanel');
+
+    const riskColors = { High: 'danger', Medium: 'warning', Low: 'success' };
+
+    function showError(msg) {
+        errorPanel.textContent = msg;
+        errorPanel.classList.remove('d-none');
+        loadingPanel.classList.add('d-none');
+        resultsPanel.classList.add('d-none');
+    }
+
+    function renderStats(data) {
+        const risk = data.riskLevel || 'Low';
+        document.getElementById('statsRow').innerHTML = `
+            <div class="col-sm-3"><div class="card shadow-sm text-center border-${riskColors[risk]}">
+                <div class="card-body">
+                    <div class="display-6 fw-bold text-${riskColors[risk]}">${data.riskScore}</div>
+                    <div class="text-muted small">Risk Score</div>
+                    <span class="badge bg-${riskColors[risk]}">${risk}</span>
+                </div></div></div>
+            <div class="col-sm-3"><div class="card shadow-sm text-center">
+                <div class="card-body"><div class="display-6 fw-bold text-warning">${data.totalAffectedFiles}</div><div class="text-muted small">Affected Files</div></div></div></div>
+            <div class="col-sm-3"><div class="card shadow-sm text-center">
+                <div class="card-body"><div class="display-6 fw-bold text-info">${data.affectedLayerCount}</div><div class="text-muted small">Layers Impacted</div></div></div></div>
+            <div class="col-sm-3"><div class="card shadow-sm text-center">
+                <div class="card-body"><div class="display-6 fw-bold text-primary">${data.affectedProjectCount}</div><div class="text-muted small">Projects</div></div></div></div>`;
+    }
+
+    function renderLayers(layers) {
+        document.getElementById('layersList').innerHTML = layers.length === 0
+            ? '<div class="list-group-item text-muted small">No layers affected</div>'
+            : layers.map(l => `
+                <div class="list-group-item py-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi ${l.icon} text-${l.color}"></i>
+                        <span class="fw-semibold small">${l.name}</span>
+                        <span class="badge bg-${l.color} ms-auto">${l.fileCount} files</span>
+                    </div>
+                    ${l.projects.length ? `<div class="text-muted" style="font-size:.72rem;margin-top:2px">${l.projects.join(', ')}</div>` : ''}
+                </div>`).join('');
+    }
+
+    function renderFiles(files) {
+        document.getElementById('fileCount').textContent = `${files.length} files`;
+        document.getElementById('filesTableBody').innerHTML = files.length === 0
+            ? '<tr><td colspan="4" class="text-muted text-center py-3">No files matched</td></tr>'
+            : files.map(f => `
+                <tr>
+                    <td class="small text-truncate" style="max-width:200px" title="${f.relativePath}">${f.fileName}</td>
+                    <td><span class="badge bg-light text-dark border small">${f.layer}</span></td>
+                    <td class="small text-muted">${f.language}</td>
+                    <td><code class="small">${f.matchReason}</code></td>
+                </tr>`).join('');
+    }
+
+    function renderRecs(recs) {
+        document.getElementById('recsList').innerHTML = recs.map(r =>
+            `<div class="list-group-item py-2 small"><i class="bi bi-check-circle text-success me-2"></i>${r}</div>`
+        ).join('');
+    }
+
+    analyzeBtn?.addEventListener('click', async () => {
+        const repoId    = document.getElementById('repoSelect').value;
+        const component = document.getElementById('componentInput').value.trim();
+        const changeType= document.getElementById('changeTypeSelect').value;
+
+        if (!repoId || !component) { showError('Please select a repository and enter a component name.'); return; }
+
+        errorPanel.classList.add('d-none');
+        resultsPanel.classList.add('d-none');
+        loadingPanel.classList.remove('d-none');
+
+        try {
+            const resp = await fetch('@Url.Action("Analyze", "ImpactAnalysis")', {
+                method : 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body   : JSON.stringify({ repositoryId: repoId, component, changeType }),
+            });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json();
+
+            renderStats(data);
+            renderLayers(data.affectedLayers || []);
+            renderFiles(data.affectedFiles   || []);
+            renderRecs(data.recommendations  || []);
+            document.getElementById('narrativeText').textContent =
+                data.aiNarrative || 'No AI narrative available (AI service may be offline).';
+
+            loadingPanel.classList.add('d-none');
+            resultsPanel.classList.remove('d-none');
+        } catch (err) {
+            showError(err.message);
+        }
+    });
+
+    // Pre-fill repo if passed from server
+    const preRepo = '@selectedId';
+    if (preRepo && preRepo !== '') {
+        const sel = document.getElementById('repoSelect');
+        if (sel) sel.value = preRepo;
+    }
+})();
+</script>
+}

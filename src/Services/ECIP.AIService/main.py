@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 import dependencies
-from routers import health_router, gateway_router, prompt_router, settings_router, planner_router
+from routers import health_router, gateway_router, prompt_router, settings_router, planner_router, onboarding_router
 
 logging.basicConfig(
     level=logging.INFO,
@@ -45,6 +45,7 @@ app.include_router(gateway_router.router)
 app.include_router(prompt_router.router)
 app.include_router(settings_router.router)
 app.include_router(planner_router.router)
+app.include_router(onboarding_router.router)
 
 
 @app.get("/", tags=["Root"])
